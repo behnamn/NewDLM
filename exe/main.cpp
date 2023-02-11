@@ -104,6 +104,20 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
     }
 }
 
+void test_full(Simulation* sim){
+    auto trManager = sim->trManager;
+    trManager->reset_possibles();
+    trManager->fill_rates();
+    std::cout << trManager->transitions.size() << endl;
+    for (auto &tr : trManager->transitions){
+        tr.decide_possible();
+        if (tr.possible){
+            tr.print();
+        }
+
+    }
+}
+
 int main(int argc, char * argv[]) {
     Inputs *inputs = new Inputs(argc,argv);
     Constants *constants = new Constants(inputs);
@@ -132,8 +146,8 @@ int main(int argc, char * argv[]) {
 
         //G->print_embedding();
 
-        test_loops(constants,G,design);
-
+        //test_loops(constants,G,design);
+        test_full(sim);
         sim->ofiles->close_files();
     }
     else if (inputs->config_generator){

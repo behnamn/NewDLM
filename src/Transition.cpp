@@ -293,7 +293,7 @@ void Transition::print(){
     cout << design->staple_pools[pool].name << "\t";
     cout << "st " << staple->id << "\t";
     cout << "dom " << domain->id << "\t";
-    cout << "dom " << domain->length << "\t";
+    cout << "len " << domain->length << "\t";
     cout << "[";
     cout << state_names.array(initial_state);
     cout << "->";

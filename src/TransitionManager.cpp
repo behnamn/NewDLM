@@ -429,7 +429,6 @@ void TransitionManager::fill_rates_custom(){ //Custom
 }
 
 void TransitionManager::fill_rates(){
-
     if (this->custom_rates) fill_rates_custom();
     else cout << "custom rate model only in this release." << endl;
     //else if (this->mixed_rates) fill_rates_mixed();

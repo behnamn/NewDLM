@@ -10,7 +10,6 @@
 
 #include "Loop.h"
 
-void remove_long_crossovers(Graph& graph, const int& numDomains);
 void remove_long_crossovers(Graph& graph, const Design* design, bool pseudo);
 void readd_long_crossovers(Graph& graph);
 
@@ -23,39 +22,40 @@ public:
     Comp_Graph ();
     Comp_Graph (int, string, int);
     virtual ~Comp_Graph(){}
-    
+
     int pool_id; //-1 for main component graph.
     string pool_name;
     std::size_t num_vertices;
-    
+
     Graph g;
     std::size_t num_components;
     vector<int> component; //component[i] = the index of the component that vertex i is part of.
     vector<int> comp_sizes; //comp_sizes[i] = size of i'th largest cluster
     vector<int> num_comps; //num_comps[i] = number of components of size i;
-    
+
     void fill_components();
-    
+
     void add_OPs();
     vector<OrderParameter> OPs; //index is the index of temperate in TempRamp::unique_Ts
 
 };
+
 class MyGraph{
 public:
     MyGraph (Design*);
 	virtual ~MyGraph(){}
-    
+
     Inputs* inputs;
 	Design* design;
 	Graph g; //Graph of design subdomains
 
     Comp_Graph cg; //Component graph for design (of g)
     vector<Comp_Graph> p_cg; //Component graphs for each pool
-    
+
 	void add_vertices();
     void add_layouts();
 	void add_domains();
-	
+
     void initialise_state();
     void bind_domain(const PDOM, bool pseudo = false);
     void unbind_domain(const PDOM, bool pseudo = false);
@@ -81,7 +81,7 @@ public:
 
 
     void fill_components();
-    
+
 	void print_edges();
     void print_embedding();
     void write_single(const string&,Graph&,const string&);
@@ -89,10 +89,10 @@ public:
 
 
 
-    
-    
-    
-    
+
+
+
+
     //Redundant
     edge_t id_to_edge(int);
     void complete();
@@ -101,8 +101,6 @@ public:
     void unbind_domain(const SDOM, bool pseudo = false);
     //Redundant: implemented within update_faces.
     void update_embedding();
-    Loop select_face(edge_t);
-    vector<Loop> select_all_faces(edge_t);
 };
 
 #endif

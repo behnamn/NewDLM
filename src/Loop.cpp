@@ -8,44 +8,6 @@
 
 #include "Loop.h"
 
-FaceManager::FaceManager(){}
-FaceManager::FaceManager (Graph* g_) : g(g_) {
-}
-
-void Loop::calculate_weight(const Graph& g){
-    weight = 0.;
-    for (auto e = edges.begin(); e!= edges.end(); ++e){
-        weight += g[*e].weight;
-    }
-}
-
-void Loop::print(){
-    cout << "Loop: ";
-    for (auto e = edges.begin(); e!= edges.end(); ++e){
-        cout << "(" << e->m_source << "->" << e->m_target << ")" << "\t";
-    }
-    cout << weight << endl;
-}
-
-void FaceManager::print(){
-    cout << "---- Printing all loops ---\n";
-    int i = 1;
-    for (auto loop = faces.begin(); loop!= faces.end(); ++loop){
-        cout << "Loop" << i << ": ";
-        for (auto e = loop->edges.begin(); e!= loop->edges.end(); ++e){
-            cout << "(" << e->m_source << "->" << e->m_target << ")" << "\t";
-        }
-        loop->calculate_weight(*g);
-        cout << loop->weight << endl;
-        i++;
-    }
-}
-
-
-
-
-
-
 
 void print_embedding_storage(Graph& g, planar_embedding_storage_t& emb){
     vertex_t v;
@@ -62,8 +24,6 @@ void print_embedding_storage(Graph& g, planar_embedding_storage_t& emb){
     }
     std::cout << std::endl;
 }
-
-
 
 traversal_visitor::traversal_visitor(const Graph &graph) :
         graph(graph), numFaces(0), total_weight(0), logsum(0){}

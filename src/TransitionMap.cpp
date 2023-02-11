@@ -9,11 +9,13 @@
 #include "TransitionMap.h"
 
 TransitionMap::TransitionMap(){
+    /*
 	for (int i=0; i<State_MAX; i++){
 		for (int j=0; j<State_MAX; j++){
 			FullMap[make_pair(State_t(i),State_t(j))] = TP();
 		}
 	}
+     */
 	FullMap[make_pair(s0,s1)] = TP(true,0);
 	
 	FullMap[make_pair(s00,s10)] = TP(true,0);     FullMap[make_pair(s00,s01)] = TP(true,1);
@@ -41,6 +43,8 @@ TransitionMap::TransitionMap(){
 			}
 		}
 	}
+
+    FullMap[make_pair(s111,s101)] = TP(false,0,2);
 }
 
 void TransitionMap::print(){

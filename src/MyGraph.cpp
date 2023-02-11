@@ -17,30 +17,15 @@ void reset_edge_index(Graph& g) {
     }
 }
 
-void remove_long_crossovers(Graph& graph, const int& numDomains){
-    edge_iterator_t ei,ef;
-    CR cross;
-    tie(ei,ef) = edges(graph);
-    std::advance(ei,numDomains);
-    std::cout << *ei << endl;
-    for ( ; ei != ef ; ++ei){
-        if (graph[*ei].crossover.second){
-            cross = graph[*ei].crossover.first;
-            if (cross->type=='l'){
-                boost::remove_edge(*ei,graph);
-            }
-        }
-    }
-    reset_edge_index(graph);
-}
+
 void remove_long_crossovers(Graph& graph, const Design* design, bool pseudo){
     edge_t e;
 
-    for (const auto pool : design->staple_pools) {
-        for (const auto cross : pool.crossovers){
-            if (cross.type == 'l') {
-                if (!pseudo && cross.edge.second) { e = cross.edge.first;}
-                else if (pseudo && cross.pseudo_edge.second) {e = cross.pseudo_edge.first;}
+    for (auto pool = design->staple_pools.begin(); pool!=design->staple_pools.end(); ++pool) {
+        for (auto cross = pool->crossovers.begin(); cross!=pool->crossovers.end(); ++cross){
+            if (cross->type == 'l') {
+                if (!pseudo && cross->edge.second) { e = cross->edge.first;}
+                else if (pseudo && cross->pseudo_edge.second) {e = cross->pseudo_edge.first;}
                 else { continue; }
                 boost::remove_edge(e, graph);
             }
