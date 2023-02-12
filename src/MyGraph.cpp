@@ -7,7 +7,7 @@
 
 #include "MyGraph.h"
 
-void reset_edge_index(Graph& g) {
+void reset_edge_index_single(Graph& g) {
     edge_iterator_t ei,ef;
     tie(ei,ef) = edges(g);
     int i = 0;
@@ -18,42 +18,28 @@ void reset_edge_index(Graph& g) {
 }
 
 
-void remove_long_crossovers(Graph& graph, const Design* design, bool pseudo){
-    edge_t e;
-
+void remove_long_crossovers(Graph& graph, const Design* design){
     for (auto pool = design->staple_pools.begin(); pool!=design->staple_pools.end(); ++pool) {
         for (auto cross = pool->crossovers.begin(); cross!=pool->crossovers.end(); ++cross){
             if (cross->type == 'l') {
-                if (!pseudo && cross->edge.second) { e = cross->edge.first;}
-                else if (pseudo && cross->pseudo_edge.second) {e = cross->pseudo_edge.first;}
-                else { continue; }
-                boost::remove_edge(e, graph);
+                if (cross->edge.second)
+                    boost::remove_edge(cross->edge.first, graph);
             }
         }
     }
-    reset_edge_index(graph);
+    reset_edge_index_single(graph);
 }
-void readd_long_crossovers(Graph& graph, Design* design, bool pseudo){
+void readd_long_crossovers(Graph& graph, Design* design){
     EdgeProperty EP;
     for (auto pool = design->staple_pools.begin(); pool!=design->staple_pools.end(); ++pool) {
         for (auto cross = pool->crossovers.begin(); cross!=pool->crossovers.end(); ++cross){
             if (cross->type == 'l') {
-                if (!pseudo && cross->edge.second) {
+                if (cross->edge.second) {
                     EP.domain.second = false;
                     EP.crossover = make_pair(cross,true);
                     EP.weight = cs_hack;
                     EP.id = boost::num_edges(graph);
                     cross->edge.first = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, graph).first;
-                }
-                else if (pseudo && cross->pseudo_edge.second) {
-                    EP.domain.second = false;
-                    EP.crossover = make_pair(cross,true);
-                    EP.weight = cs_hack;
-                    EP.id = boost::num_edges(graph);
-                    cross->pseudo_edge.first = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, graph).first;
-                }
-                else {
-                    continue;
                 }
             }
         }
@@ -144,11 +130,9 @@ MyGraph::MyGraph (Design* design_) : design(design_) {
 void MyGraph::add_vertices(){
     // global 2
     embedding_storage.resize(design->num_domains);
-    next_embedding_storage.resize(design->num_domains);
 
     for(int i=0; i<design->num_domains; i++){
         add_vertex(g);
-        add_vertex(next_g);
         if (inputs->track_clusters) add_vertex(cg.g);
     }
     if (inputs->track_clusters){
@@ -190,14 +174,10 @@ void MyGraph::add_domains(){
         EP.domain_s = make_pair(d,true);
         EP.weight = d->length * l_ss * lambda_ss;
         d->edge = add_edge(d->node_ids.first, d->node_ids.second, EP, g).first;
-        d->pseudo_edge = add_edge(d->node_ids.first, d->node_ids.second, EP, next_g).first;
 
-        // global 2
         embedding_storage[d->node_ids.first].push_back(d->edge);
-        next_embedding_storage[d->node_ids.first].push_back(d->pseudo_edge);
     }
 
-    // global2
     vertex_t v1, v2;
     auto vs =  boost::make_iterator_range(vertices(g));
     for (auto vi = vs.begin(); vi!= vs.end(); ++vi){
@@ -205,13 +185,6 @@ void MyGraph::add_domains(){
         if (vi == std::prev(vs.end())) {v2 = *vs.begin();}
         else{v2 = *std::next(vi);}
         embedding_storage[g[v2].id].push_back(embedding_storage[g[v1].id][0]);
-    }
-    auto nvs =  boost::make_iterator_range(vertices(next_g));
-    for (auto vi = nvs.begin(); vi!= nvs.end(); ++vi){
-        v1 = *vi;
-        if (vi == std::prev(vs.end())) {v2 = *vs.begin();}
-        else{v2 = *std::next(vi);}
-        next_embedding_storage[next_g[v2].id].push_back(next_embedding_storage[next_g[v1].id][0]);
     }
 }
 
@@ -227,31 +200,27 @@ void MyGraph::initialise_state(){
         }
     }
 }
-void MyGraph::bind_domain(const PDOM domain, bool pseudo){
-    if (!pseudo && inputs->track_clusters && design->num_staple_pools > 1){
+void MyGraph::bind_domain(const PDOM domain){
+    if (inputs->track_clusters && design->num_staple_pools > 1){
         EdgeProperty EP;
         EP.crossover.second = false;
         EP.id = domain->id;
         EP.domain_p = make_pair(domain,true);
         domain->edge_p = add_edge(domain->node_idps.first, domain->node_idps.second, EP, p_cg[domain->pool_id].g);
-        //reset_vertex_index();
         reset_edge_index();
     }
-    bind_domains(domain->children, pseudo);
+    bind_domains(domain->children);
 }
-void MyGraph::unbind_domain(const PDOM domain, bool pseudo){
-    if (!pseudo && inputs->track_clusters && design->num_staple_pools > 1){
+void MyGraph::unbind_domain(const PDOM domain){
+    if (inputs->track_clusters && design->num_staple_pools > 1){
         remove_edge(domain->edge_p.first, p_cg[domain->pool_id].g);
         domain->edge_p.second = false;
-        //reset_vertex_index();
         reset_edge_index();
     }
-    unbind_domains(domain->children, pseudo);
+    unbind_domains(domain->children);
 }
-void MyGraph::bind_domains(vector<SDOM>& domains, bool pseudo){
+void MyGraph::bind_domains(vector<SDOM>& domains){
     for(auto domain = domains.begin(); domain!= domains.end(); ++domain){
-        next_g[(*domain)->pseudo_edge].weight = (*domain)->length * (*domain)->length * ds_hack;
-        if (pseudo){continue;}
         g[(*domain)->edge].weight = (*domain)->length * (*domain)->length * ds_hack;
         if (inputs->track_clusters){
             EdgeProperty EP;
@@ -259,87 +228,57 @@ void MyGraph::bind_domains(vector<SDOM>& domains, bool pseudo){
             EP.id = (*domain)->id;
             EP.domain_s = make_pair((*domain),true);
             (*domain)->edge2 = add_edge((*domain)->node_ids.first, (*domain)->node_ids.second, EP, cg.g);
-            //reset_vertex_index();
             reset_edge_index();
         }
     }
 }
-void MyGraph::unbind_domains(vector<SDOM>& domains, bool pseudo){
+void MyGraph::unbind_domains(vector<SDOM>& domains){
     for(auto domain = domains.begin(); domain!= domains.end(); ++domain){
-        next_g[(*domain)->pseudo_edge].weight = (*domain)->length * ss_hack;
-        if (pseudo){continue;}
         g[(*domain)->edge].weight = (*domain)->length * ss_hack;
         if (inputs->track_clusters){
             remove_edge((*domain)->edge2.first, cg.g);
             (*domain)->edge2.second = false;
-            //reset_vertex_index();
             reset_edge_index();
         }
     }
 }
-void MyGraph::add_crossover(CR cross, bool pseudo){
+void MyGraph::add_crossover(CR cross){
     EdgeProperty EP;
     EP.domain.second = false;
     EP.crossover = make_pair(cross,true);
     EP.weight = cs_hack;
-    if (pseudo){
-        EP.id = boost::num_edges(next_g);
-        cross->pseudo_edge = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, next_g);
-        //reset_edge_index(pseudo);
-    }
-    else{
-        EP.id = boost::num_edges(next_g);
-        cross->pseudo_edge = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, next_g);
-        EP.id = boost::num_edges(g);
-        cross->edge = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, g);
-        if (inputs->track_clusters){
-            EP.id = boost::num_edges(cg.g);
-            cross->edge2 = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, cg.g);
-            if (design->num_staple_pools > 1)
-                EP.id = boost::num_edges(p_cg[cross->pool_id].g);
-                cross->edge_p = add_edge((cross->nodes.first)->idp, (cross->nodes.second)->idp, EP, p_cg[cross->pool_id].g);
-        }
-        //reset_edge_index();
-    }
-    // global2
-    this->add2embedding(cross,pseudo);
-}
-void MyGraph::remove_crossover(CR cross, bool pseudo){
-    // global2
-    this->removeFromEmbedding(cross,pseudo);
+    EP.id = boost::num_edges(g);
+    cross->edge = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, g);
+    this->add2embedding(cross);
 
-    if (pseudo){
-        remove_edge(cross->pseudo_edge.first, next_g);
-        cross->pseudo_edge.second = false;
-        //reset_vertex_index(pseudo);
-        reset_edge_index(pseudo);
+    if (inputs->track_clusters){
+        EP.id = boost::num_edges(cg.g);
+        cross->edge2 = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, cg.g);
+        if (design->num_staple_pools > 1)
+            EP.id = boost::num_edges(p_cg[cross->pool_id].g);
+        cross->edge_p = add_edge((cross->nodes.first)->idp, (cross->nodes.second)->idp, EP, p_cg[cross->pool_id].g);
     }
-    else{
-        remove_edge(cross->pseudo_edge.first, next_g);
-        cross->pseudo_edge.second = false;
-        remove_edge(cross->edge.first, g);
-        cross->edge.second = false;
-        if (inputs->track_clusters){
-            remove_edge(cross->edge2.first, cg.g);
-            cross->edge2.second = false;
-            if (design->num_staple_pools > 1){
-                remove_edge(cross->edge_p.first, p_cg[cross->pool_id].g);
-                cross->edge_p.second = false;
-            }
+}
+void MyGraph::remove_crossover(CR cross){
+    this->removeFromEmbedding(cross);
+    remove_edge(cross->edge.first, g);
+    cross->edge.second = false;
+    reset_edge_index_single(g);
+    if (inputs->track_clusters){
+        remove_edge(cross->edge2.first, cg.g);
+        cross->edge2.second = false;
+        if (design->num_staple_pools > 1){
+            remove_edge(cross->edge_p.first, p_cg[cross->pool_id].g);
+            cross->edge_p.second = false;
         }
-        //reset_vertex_index();
         reset_edge_index();
     }
+
 }
-void MyGraph::reset_vertex_index(bool pseudo) {
+
+void MyGraph::reset_vertex_index() {
     vertex_iterator_t vi,vf;
     int i = 0;
-    for(tie(vi,vf) = vertices(next_g); vi != vf; ++vi) {
-        next_g[*vi].id = i;
-        i++;
-    }
-    if (pseudo) {return;}
-    i = 0;
     for(tie(vi,vf) = vertices(g); vi != vf; ++vi) {
         g[*vi].id = i;
         i++;
@@ -357,30 +296,23 @@ void MyGraph::reset_vertex_index(bool pseudo) {
         }
     }
 }
-void MyGraph::reset_edge_index(bool pseudo) {
+void MyGraph::reset_edge_index() {
     edge_iterator_t ei,ef;
-    tie(ei,ef) = edges(next_g);
     int i = 0;
-    for ( ; ei != ef ; ++ei){
-        next_g[*ei].id = i;
-        i++;
-    }
-    if (pseudo) {return;}
     tie(ei,ef) = edges(g);
-    i = 0;
     for ( ; ei != ef ; ++ei){
         g[*ei].id = i;
         i++;
     }
-    tie(ei,ef) = edges(cg.g);
     i = 0;
+    tie(ei,ef) = edges(cg.g);
     for ( ; ei != ef ; ++ei){
         cg.g[*ei].id = i;
         i++;
     }
     for (int p = 0; p< p_cg.size(); p++){
-        tie(ei,ef) = edges(p_cg[p].g);
         i = 0;
+        tie(ei,ef) = edges(p_cg[p].g);
         for ( ; ei != ef ; ++ei){
             (p_cg[p].g)[*ei].id = i;
             i++;
@@ -389,170 +321,88 @@ void MyGraph::reset_edge_index(bool pseudo) {
 }
 
 
-void MyGraph::add2embedding(const CR& cross, bool pseudo){
+void MyGraph::add2embedding(const CR& cross){
     if (cross->type == 'l') return;
     int v1 = (cross->nodes.first)->id;
     int v2 = (cross->nodes.second)->id;
-    std::size_t pseudo_num_existing_edges = next_embedding_storage[v1].size();
-    if (pseudo_num_existing_edges == 2){
-        if (cross->type =='i' || cross->type == 's'){
-            next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+1,cross->pseudo_edge.first);
-            next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+1,cross->pseudo_edge.first);
+    std::size_t num_existing_edges = embedding_storage[v1].size();
+    if (num_existing_edges == 2) {
+        if (cross->type == 'i' || cross->type == 's') {
+            embedding_storage[v1].insert(embedding_storage[v1].begin() + 1, cross->edge.first);
+            embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
         }
         else if (cross->type =='o'){
-            next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+2,cross->pseudo_edge.first);
-            next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
+            embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
+            embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
         }
-    }
-    else if (pseudo_num_existing_edges == 3){
-        if (cross->type =='i' || cross->type == 's'){
+    } else if (num_existing_edges == 3) {
+        if (cross->type == 'i' || cross->type == 's') {
             //int pos = adjacent_edge_position(v1,edge,emb_storage[u],g);
-            next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+2,cross->pseudo_edge.first);
-            next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+1,cross->pseudo_edge.first);
+            embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
+            embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
         }
         /*
         else if (cross->type =='o'){
-            next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+3,cross->pseudo_edge.first);
-            next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
+            embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
+            embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
         }
          */
-        else if (cross->type =='o'){
-
-            int d0_otherV = circ_add(v1,1,design->num_domains);
-            int d1_otherV = circ_substract(v1,1,design->num_domains);
-            int c0_otherV = boost::source(next_embedding_storage[v1][2],next_g);
-            if (c0_otherV == v1) c0_otherV = boost::target(next_embedding_storage[v1][2],next_g);
-            int c1_otherV = boost::source(cross->pseudo_edge.first, g);
-            if (c1_otherV == v1) c1_otherV = boost::target(cross->pseudo_edge.first, g);
+        else if (cross->type =='o') {
+            int d0_otherV = circ_add(v1, 1, design->num_domains);
+            int d1_otherV = circ_substract(v1, 1, design->num_domains);
+            int c0_otherV = boost::source(embedding_storage[v1][2], g);
+            if (c0_otherV == v1) c0_otherV = boost::target(embedding_storage[v1][2], g);
+            int c1_otherV = boost::source(cross->edge.first, g);
+            if (c1_otherV == v1) c1_otherV = boost::target(cross->edge.first, g);
 
             if (c1_otherV == c0_otherV){
-                next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+3,cross->pseudo_edge.first);
-            }
-            else{
-                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
-                int a = abs(circ_substract(d0_otherV,c0_otherV,design->num_domains));
-                int b = abs(circ_substract(d1_otherV,c0_otherV,design->num_domains));
-                if (a > b)
-                    next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+3,cross->pseudo_edge.first);
-                else
-                    next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+2,cross->pseudo_edge.first);
-            }
-
-
-
-            d0_otherV = circ_add(v2,1,design->num_domains);
-            d1_otherV = circ_substract(v2,1,design->num_domains);
-            c0_otherV = boost::source(next_embedding_storage[v2][2],next_g);
-            if (c0_otherV == v2) c0_otherV = boost::target(next_embedding_storage[v2][2],next_g);
-            c1_otherV = boost::source(cross->pseudo_edge.first, g);
-            if (c1_otherV == v2) c1_otherV = boost::target(cross->pseudo_edge.first, g);
-            if (c1_otherV == c0_otherV){
-                next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
-            }
-            else{
-                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
-                int a = abs(circ_substract(d0_otherV,c0_otherV,design->num_domains));
-                int b = abs(circ_substract(d1_otherV,c0_otherV,design->num_domains));
-                if (a > b)
-                    next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+3,cross->pseudo_edge.first);
-                else
-                    next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
-
-            }
-
-
-        }
-    }
-    else{
-        std::cout << "Add Crossover:: vertex can only have up to 4 edges (2 crossovers)." << std::endl;
-    }
-    if (!pseudo) {
-        std::size_t num_existing_edges = embedding_storage[v1].size();
-        if (num_existing_edges == 2) {
-            if (cross->type == 'i' || cross->type == 's') {
-                embedding_storage[v1].insert(embedding_storage[v1].begin() + 1, cross->edge.first);
-                embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
-            }
-            else if (cross->type =='o'){
-                embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
-                embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
-            }
-        } else if (num_existing_edges == 3) {
-            if (cross->type == 'i' || cross->type == 's') {
-                //int pos = adjacent_edge_position(v1,edge,emb_storage[u],g);
-                embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
-                embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
-            }
-            /*
-            else if (cross->type =='o'){
                 embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
+            }
+            else{
+                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
+                int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
+                int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
+                if (a > b)
+                    embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
+                else
+                    embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
+            }
+
+            d0_otherV = circ_add(v2, 1, design->num_domains);
+            d1_otherV = circ_substract(v2, 1, design->num_domains);
+            c0_otherV = boost::source(embedding_storage[v2][2], g);
+            if (c0_otherV == v2) c0_otherV = boost::target(embedding_storage[v2][2], g);
+            c1_otherV = boost::source(cross->edge.first, g);
+            if (c1_otherV == v2) c1_otherV = boost::target(cross->edge.first, g);
+            if (c1_otherV == c0_otherV){
                 embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
             }
-             */
-            else if (cross->type =='o') {
-                int d0_otherV = circ_add(v1, 1, design->num_domains);
-                int d1_otherV = circ_substract(v1, 1, design->num_domains);
-                int c0_otherV = boost::source(embedding_storage[v1][2], g);
-                if (c0_otherV == v1) c0_otherV = boost::target(embedding_storage[v1][2], g);
-                int c1_otherV = boost::source(cross->edge.first, g);
-                if (c1_otherV == v1) c1_otherV = boost::target(cross->edge.first, g);
-
-                if (c1_otherV == c0_otherV){
-                    embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
-                }
-                else{
-                    cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
-                    int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
-                    int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
-                    if (a > b)
-                        embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
-                    else
-                        embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
-                }
-
-                d0_otherV = circ_add(v2, 1, design->num_domains);
-                d1_otherV = circ_substract(v2, 1, design->num_domains);
-                c0_otherV = boost::source(embedding_storage[v2][2], g);
-                if (c0_otherV == v2) c0_otherV = boost::target(embedding_storage[v2][2], g);
-                c1_otherV = boost::source(cross->edge.first, g);
-                if (c1_otherV == v2) c1_otherV = boost::target(cross->edge.first, g);
-                if (c1_otherV == c0_otherV){
+            else{
+                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
+                int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
+                int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
+                if (a > b)
+                    embedding_storage[v2].insert(embedding_storage[v2].begin() + 3, cross->edge.first);
+                else
                     embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
-                }
-                else{
-                    cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
-                    int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
-                    int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
-                    if (a > b)
-                        embedding_storage[v2].insert(embedding_storage[v2].begin() + 3, cross->edge.first);
-                    else
-                        embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
-                }
             }
-        } else {
-            std::cout << "Add Crossover:: vertex can only have 2 or 3 edges." << std::endl;
         }
+    } else {
+        std::cout << "Add Crossover:: vertex can only have 2 or 3 edges." << std::endl;
     }
 }
-void MyGraph::removeFromEmbedding(const CR& cross, bool pseudo){
+void MyGraph::removeFromEmbedding(const CR& cross){
     int v1 = (cross->nodes.first)->id;
     int v2 = (cross->nodes.second)->id;
+    edge_t edge = cross->edge.first;
+    embedding_storage[v1].erase(std::remove(embedding_storage[v1].begin(),embedding_storage[v1].end(),edge),embedding_storage[v1].end());
+    embedding_storage[v2].erase(std::remove(embedding_storage[v2].begin(),embedding_storage[v2].end(),edge),embedding_storage[v2].end());
 
-    edge_t pseudo_edge = cross->pseudo_edge.first;
-    next_embedding_storage[v1].erase(std::remove(next_embedding_storage[v1].begin(),next_embedding_storage[v1].end(),pseudo_edge),next_embedding_storage[v1].end());
-    next_embedding_storage[v2].erase(std::remove(next_embedding_storage[v2].begin(),next_embedding_storage[v2].end(),pseudo_edge),next_embedding_storage[v2].end());
-
-    if (!pseudo) {
-        edge_t edge = cross->edge.first;
-        embedding_storage[v1].erase(std::remove(embedding_storage[v1].begin(),embedding_storage[v1].end(),edge),embedding_storage[v1].end());
-        embedding_storage[v2].erase(std::remove(embedding_storage[v2].begin(),embedding_storage[v2].end(),edge),embedding_storage[v2].end());
-    }
 }
 double MyGraph::faces_weight() {
     double result = 0;
     double C_parameter = 2.8 * pow(10,-18);
-    remove_long_crossovers(g, design, false);
-    //print_embedding_storage(g,embedding_storage);
+    remove_long_crossovers(g, design);
 
     traversal_visitor outvis(g);
     set_face_data(g, embedding_storage, outvis);
@@ -560,55 +410,20 @@ double MyGraph::faces_weight() {
     for (auto pool = design->staple_pools.begin(); pool!=design->staple_pools.end(); ++pool) {
         for (auto cross = pool->crossovers.begin(); cross!=pool->crossovers.end(); ++cross){
             if (cross->type == 'l' && cross->edge.second) {
-                result += log(C_parameter / (cs_hack + long_pathweight(cross, false)));
+                result += log(C_parameter / (cs_hack + long_pathweight(cross)));
+            }
+        }
+    }
+    readd_long_crossovers(g,design);
 
-            }
-        }
-    }
-    readd_long_crossovers(g,design,false);
-    //std::cout << outvis.numFaces << " faces, ";
-    //std::cout << "Weight = " << outvis.total_weight << ", ";
-    //std::cout << "sum(log) = " << outvis.logsum;
-    //std::cout << std::endl;
     return result;
 }
-double MyGraph::next_faces_weight() {
-    double result = 0;
-    double C_parameter = 2.8 * pow(10,-18);
-    remove_long_crossovers(next_g, design, true);
-    //print_embedding_storage(next_g,next_embedding_storage);
-    traversal_visitor outvis(next_g);
-    set_face_data(next_g, next_embedding_storage, outvis);
-    result += outvis.logsum;
-    for (auto pool = design->staple_pools.begin(); pool!=design->staple_pools.end(); ++pool) {
-        for (auto cross = pool->crossovers.begin(); cross!=pool->crossovers.end(); ++cross){
-            if (cross->type == 'l' && cross->pseudo_edge.second) {
-                result += log(C_parameter / (cs_hack + long_pathweight(cross, true)));
-            }
-        }
-    }
-    readd_long_crossovers(next_g,design,true);
-    //std::cout << outvis.numFaces << " faces, ";
-    //std::cout << "Weight = " << outvis.total_weight << ", ";
-    //std::cout << "sum(log) = " << outvis.logsum;
-    //std::cout << std::endl;
-    return result;
-}
-double MyGraph::long_pathweight(const CR crossover, bool pseudo) {
-    if (pseudo) {
-        DistanceMap distanceMap(&distances[0], get(vertex_index, next_g));
-        dijkstra_shortest_paths_no_color_map(next_g, crossover->node_ids.first,
-                                             weight_map(get(&EdgeProperty::weight, next_g)).
-                                                     distance_map(distanceMap));
-        return distanceMap[crossover->node_ids.second];
-    }
-    else {
-        DistanceMap distanceMap(&distances[0], get(vertex_index, g));
-        dijkstra_shortest_paths_no_color_map(g, crossover->node_ids.first,
-                                             weight_map(get(&EdgeProperty::weight, g)).
-                                                     distance_map(distanceMap));
-        return distanceMap[crossover->node_ids.second];
-    }
+double MyGraph::long_pathweight(const CR crossover) {
+    DistanceMap distanceMap(&distances[0], get(vertex_index, g));
+    dijkstra_shortest_paths_no_color_map(g, crossover->node_ids.first,
+                                         weight_map(get(&EdgeProperty::weight, g)).
+                                                 distance_map(distanceMap));
+    return distanceMap[crossover->node_ids.second];
 }
 
 

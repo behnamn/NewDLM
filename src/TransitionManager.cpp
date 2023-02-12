@@ -307,8 +307,10 @@ void TransitionManager::set_dG_shape(TR& tr, bool based_on_affected) {
         tr->dG_shape = -(gas_constant * ramp->get_T()) * constants->gamma_parameter * log(constants->C_parameter / E);
     }
     else{
-        tr->pseudo_apply(G);
-        tr->dG_shape = -(gas_constant * ramp->get_T() * constants->gamma_parameter ) *( G->next_faces_weight() - G->faces_weight() );
+        double logsum0 = G->faces_weight();
+        tr->apply(G);
+        double logsum1 = G->faces_weight();
+        tr->dG_shape = -(gas_constant * ramp->get_T() * constants->gamma_parameter ) *( logsum1 - logsum0 );
         tr->undo_apply(G);
     }
 }

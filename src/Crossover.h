@@ -74,7 +74,6 @@ public:
 
 
     std::pair<edge_t,bool> edge;
-    std::pair<edge_t,bool> pseudo_edge;
     std::pair<edge_t,bool> edge2; // for connected components
     std::pair<edge_t,bool> edge_p;
 

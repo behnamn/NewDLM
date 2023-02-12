@@ -10,12 +10,12 @@
 
 #include "Loop.h"
 
-void remove_long_crossovers(Graph& graph, const Design* design, bool pseudo);
-void readd_long_crossovers(Graph& graph);
+void remove_long_crossovers(Graph& graph, const Design* design);
+void readd_long_crossovers(Graph& graph, Design* design);
 
 
 bool sort_decending (int,int);
-void reset_edge_index(Graph&);
+void reset_edge_index_single(Graph&);
 
 class Comp_Graph{
 public:
@@ -57,27 +57,24 @@ public:
 	void add_domains();
 
     void initialise_state();
-    void bind_domain(const PDOM, bool pseudo = false);
-    void unbind_domain(const PDOM, bool pseudo = false);
-    void bind_domains(vector<SDOM>&, bool pseudo = false);
-    void unbind_domains(vector<SDOM>&, bool pseudo = false);
-	void add_crossover(CR, bool pseudo = false);
-	void remove_crossover(CR, bool pseudo = false);
-    void reset_vertex_index(bool pseudo = false);
-    void reset_edge_index(bool pseudo = false);
+    void bind_domain(const PDOM);
+    void unbind_domain(const PDOM);
+    void bind_domains(vector<SDOM>&);
+    void unbind_domains(vector<SDOM>&);
+	void add_crossover(CR);
+	void remove_crossover(CR);
+    void reset_vertex_index();
+    void reset_edge_index();
 
     double shortest_path(const CR);
-    double long_pathweight(const CR, bool pseudo = false);
+    double long_pathweight(const CR);
     vector<Weight> distances; // To store distances for djkastra
 
 
-    Graph next_g; //To compute loop costs for transitions in global model
     planar_embedding_storage_t embedding_storage;
-    planar_embedding_storage_t next_embedding_storage;
-    void add2embedding(const CR& cross, bool pseudo = false);
-    void removeFromEmbedding(const CR& cross, bool pseudo = false);
+    void add2embedding(const CR& cross);
+    void removeFromEmbedding(const CR& cross);
     double faces_weight();
-    double next_faces_weight();
 
 
     void fill_components();

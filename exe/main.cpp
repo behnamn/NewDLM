@@ -216,7 +216,10 @@ void test_full(Simulation* sim){
         std::cout << *trManager->next << "\t";
         std::cout << trManager->next->dG_duplex << "\t";
         std::cout << trManager->next->dG_stack << "\t";
-        std::cout << trManager->next->dG_shape << std::endl;
+        std::cout << trManager->next->dG_shape << "\t";
+        if (trManager->next->properties.cross)
+            std::cout << trManager->next->crossover.first->type;
+        std::cout << std::endl;
         trManager->apply_next();
     }
 

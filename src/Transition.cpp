@@ -167,83 +167,40 @@ void Transition::apply(MyGraph* G){
     }
     else{}
 }
-
-void Transition::pseudo_apply(MyGraph* G){
-    if(type == normal){
-        if (properties.bind){
-            G->bind_domain(domain, true);
-            if(crossover.second){
-                G->add_crossover(crossover.first, true);
-            }
-        }
-        else{
-            G->unbind_domain(domain, true);
-            if(crossover.second){
-                G->remove_crossover(crossover.first, true);
-            }
-        }
-    }
-    else if (type == invasion){
-        if (properties.bind && !affected_properties.bind){
-            G->unbind_domain(affected_domain, true);
-            if(affected_crossover.second){
-                G->remove_crossover(affected_crossover.first, true);
-            }
-            G->bind_domain(domain, true);
-            if(crossover.second){
-                G->add_crossover(crossover.first, true);
-            }
-        }
-        else if (!properties.bind && affected_properties.bind){
-            G->unbind_domain(domain, true);
-            if(crossover.second){
-                G->remove_crossover(crossover.first, true);
-            }
-            G->bind_domain(affected_domain, true);
-            if(affected_crossover.second){
-                G->add_crossover(affected_crossover.first, true);
-            }
-        }
-        else{
-            cout << "Error in Transition::apply: invasion reaction is neither bind-unbind or unbind-bind!";
-        }
-    }
-    else{}
-}
 void Transition::undo_apply(MyGraph* G){
     if(type == normal){
         if (properties.bind){
-            G->unbind_domain(domain, true);
+            G->unbind_domain(domain);
             if(crossover.second){
-                G->remove_crossover(crossover.first, true);
+                G->remove_crossover(crossover.first);
             }
         }
         else{
-            G->bind_domain(domain, true);
+            G->bind_domain(domain);
             if(crossover.second){
-                G->add_crossover(crossover.first, true);
+                G->add_crossover(crossover.first);
             }
         }
     }
     else if (type == invasion){
         if (properties.bind && !affected_properties.bind){
-            G->unbind_domain(domain, true);
+            G->unbind_domain(domain);
             if(crossover.second){
-                G->remove_crossover(crossover.first, true);
+                G->remove_crossover(crossover.first);
             }
-            G->bind_domain(affected_domain, true);
+            G->bind_domain(affected_domain);
             if(affected_crossover.second){
-                G->add_crossover(affected_crossover.first, true);
+                G->add_crossover(affected_crossover.first);
             }
         }
         else if (!properties.bind && affected_properties.bind){
-            G->unbind_domain(affected_domain, true);
+            G->unbind_domain(affected_domain);
             if(affected_crossover.second){
-                G->remove_crossover(affected_crossover.first, true);
+                G->remove_crossover(affected_crossover.first);
             }
-            G->bind_domain(domain, true);
+            G->bind_domain(domain);
             if(crossover.second){
-                G->add_crossover(crossover.first, true);
+                G->add_crossover(crossover.first);
             }
         }
         else{

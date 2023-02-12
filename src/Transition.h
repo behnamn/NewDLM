@@ -82,7 +82,6 @@ public:
 	void decide_possible();
 	void apply(MyGraph*);
 
-    void pseudo_apply(MyGraph*);
     void undo_apply(MyGraph*);
 
 	void write(ofstream&);
