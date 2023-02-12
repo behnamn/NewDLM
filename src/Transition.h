@@ -9,6 +9,7 @@
 #ifndef Transition_h
 #define Transition_h
 
+#include <ostream>
 #include "MyGraph.h"
 #include "TransitionProperty.h"
 
@@ -92,6 +93,9 @@ public:
     
     bool check_seam_stack;
     bool check_affected_seam_stack;
+
+    friend ostream &operator<<(ostream &os, const Transition &transition);
+
 };
 
 

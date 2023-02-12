@@ -326,3 +326,11 @@ void Transition::print(){
     cout << "rate " << rate << "\n";
 }
 
+ostream &operator<<(ostream &os, const Transition &transition) {
+    State_names names;
+    os << "st: " << transition.staple->id << " (";
+    os << names.array(transition.initial_state) << "->";
+    os << names.array(transition.final_state) << ")";
+    return os;
+}
+

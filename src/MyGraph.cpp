@@ -410,13 +410,61 @@ void MyGraph::add2embedding(const CR& cross, bool pseudo){
             next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+2,cross->pseudo_edge.first);
             next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+1,cross->pseudo_edge.first);
         }
+        /*
         else if (cross->type =='o'){
             next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+3,cross->pseudo_edge.first);
             next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
         }
+         */
+        else if (cross->type =='o'){
+
+            int d0_otherV = circ_add(v1,1,design->num_domains);
+            int d1_otherV = circ_substract(v1,1,design->num_domains);
+            int c0_otherV = boost::source(next_embedding_storage[v1][2],next_g);
+            if (c0_otherV == v1) c0_otherV = boost::target(next_embedding_storage[v1][2],next_g);
+            int c1_otherV = boost::source(cross->pseudo_edge.first, g);
+            if (c1_otherV == v1) c1_otherV = boost::target(cross->pseudo_edge.first, g);
+
+            if (c1_otherV == c0_otherV){
+                next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+3,cross->pseudo_edge.first);
+            }
+            else{
+                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
+                int a = abs(circ_substract(d0_otherV,c0_otherV,design->num_domains));
+                int b = abs(circ_substract(d1_otherV,c0_otherV,design->num_domains));
+                if (a > b)
+                    next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+3,cross->pseudo_edge.first);
+                else
+                    next_embedding_storage[v1].insert(next_embedding_storage[v1].begin()+2,cross->pseudo_edge.first);
+            }
+
+
+
+            d0_otherV = circ_add(v2,1,design->num_domains);
+            d1_otherV = circ_substract(v2,1,design->num_domains);
+            c0_otherV = boost::source(next_embedding_storage[v2][2],next_g);
+            if (c0_otherV == v2) c0_otherV = boost::target(next_embedding_storage[v2][2],next_g);
+            c1_otherV = boost::source(cross->pseudo_edge.first, g);
+            if (c1_otherV == v2) c1_otherV = boost::target(cross->pseudo_edge.first, g);
+            if (c1_otherV == c0_otherV){
+                next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
+            }
+            else{
+                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
+                int a = abs(circ_substract(d0_otherV,c0_otherV,design->num_domains));
+                int b = abs(circ_substract(d1_otherV,c0_otherV,design->num_domains));
+                if (a > b)
+                    next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+3,cross->pseudo_edge.first);
+                else
+                    next_embedding_storage[v2].insert(next_embedding_storage[v2].begin()+2,cross->pseudo_edge.first);
+
+            }
+
+
+        }
     }
     else{
-        std::cout << "Add Crossover:: vertex can only have 2 or 3 edges." << std::endl;
+        std::cout << "Add Crossover:: vertex can only have up to 4 edges (2 crossovers)." << std::endl;
     }
     if (!pseudo) {
         std::size_t num_existing_edges = embedding_storage[v1].size();
@@ -435,9 +483,51 @@ void MyGraph::add2embedding(const CR& cross, bool pseudo){
                 embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
                 embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
             }
+            /*
             else if (cross->type =='o'){
                 embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
                 embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
+            }
+             */
+            else if (cross->type =='o') {
+                int d0_otherV = circ_add(v1, 1, design->num_domains);
+                int d1_otherV = circ_substract(v1, 1, design->num_domains);
+                int c0_otherV = boost::source(embedding_storage[v1][2], g);
+                if (c0_otherV == v1) c0_otherV = boost::target(embedding_storage[v1][2], g);
+                int c1_otherV = boost::source(cross->edge.first, g);
+                if (c1_otherV == v1) c1_otherV = boost::target(cross->edge.first, g);
+
+                if (c1_otherV == c0_otherV){
+                    embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
+                }
+                else{
+                    cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
+                    int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
+                    int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
+                    if (a > b)
+                        embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
+                    else
+                        embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
+                }
+
+                d0_otherV = circ_add(v2, 1, design->num_domains);
+                d1_otherV = circ_substract(v2, 1, design->num_domains);
+                c0_otherV = boost::source(embedding_storage[v2][2], g);
+                if (c0_otherV == v2) c0_otherV = boost::target(embedding_storage[v2][2], g);
+                c1_otherV = boost::source(cross->edge.first, g);
+                if (c1_otherV == v2) c1_otherV = boost::target(cross->edge.first, g);
+                if (c1_otherV == c0_otherV){
+                    embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
+                }
+                else{
+                    cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
+                    int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
+                    int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
+                    if (a > b)
+                        embedding_storage[v2].insert(embedding_storage[v2].begin() + 3, cross->edge.first);
+                    else
+                        embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
+                }
             }
         } else {
             std::cout << "Add Crossover:: vertex can only have 2 or 3 edges." << std::endl;
