@@ -252,6 +252,40 @@ void test_full(Simulation* sim){
     std::cout << std::endl;
 }
 
+void test_exact(Simulation* sim){
+    Design *design = sim->design;
+    StaplePool *pool = &(design->staple_pools[0]);
+    //vector<State_t> poolState(pool->num_staples);
+
+    /*
+    vector<Staple> staples = pool->staples;
+    vector<vector<State_t>> all_states;
+    std::vector<std::tuple<State_t>> result;
+    std::vector<std::vector<State_t>> product;
+
+    for (const auto& staple : staples) {
+        all_states.push_back(staple.possible_states);
+    }
+    for (const auto& states : all_states) {
+        product.push_back(states);
+    }
+    std::reverse(product.begin(), product.end());
+    do {
+        std::vector<State_t> tuple;
+        for (const auto& states : product) {
+            tuple.push_back(states.back());
+            states.pop_back();
+        }
+        std::reverse(tuple.begin(), tuple.end());
+        result.push_back(std::make_tuple(tuple));
+    } while (!product.back().empty());
+    */
+    for (auto&& t : ranges::views::cartesian_product(a, b, c) | ranges::views::all) {
+        std::cout << "(" << std::get<0>(t) << ", " << std::get<1>(t) << ", " << std::get<2>(t) << ")" << std::endl;
+    }
+
+}
+
 int main(int argc, char * argv[]) {
     Inputs *inputs = new Inputs(argc,argv);
     Constants *constants = new Constants(inputs);
@@ -281,7 +315,8 @@ int main(int argc, char * argv[]) {
         //G->print_embedding();
 
         //test_loops(constants,G,design);
-        test_full(sim);
+        //test_full(sim);
+        test_exact(sim);
         sim->ofiles->close_files();
     }
     else if (inputs->config_generator){
