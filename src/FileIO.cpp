@@ -21,9 +21,10 @@ void retruncate(ofstream& file, const string& name, const string& precursor){
 
 FileIO::FileIO(Design* design_) : design(design_){
     this->inputs = design->inputs;
-    if (inputs->sim_type != "test"){
+    if (!inputs->test){
         this->create_dirs();
-        this->open_files();
+        if (!inputs->exact)
+            this->open_files();
     }
 }
 void FileIO::create_dirs(){

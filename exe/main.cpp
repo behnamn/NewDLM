@@ -4,6 +4,34 @@
 #include "../src/TempRamp.h"
 #include "../src/Simulation.h"
 
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+    os << "[";
+    for (int i = 0; i < v.size(); ++i) {
+        os << v[i];
+        if (i != v.size() - 1)
+            os << " ";
+    }
+    os << "]";
+    return os;
+}
+vector<vector<State_t>> cartesian( vector<vector<State_t> >& v ) {
+    vector<vector<State_t>> result;
+    auto product = []( long long a, vector<State_t>& b ) { return a*b.size(); };
+    const long long N = accumulate( v.begin(), v.end(), 1LL, product );
+    vector<State_t> u(v.size());
+    for( long long n=0 ; n<N ; ++n ) {
+        lldiv_t q { n, 0 };
+        for( long long i=v.size()-1 ; 0<=i ; --i ) {
+            q = div( q.quot, v[i].size() );
+            u[i] = v[i][q.rem];
+        }
+        result.push_back(u);
+    }
+    return result;
+}
+
 void manual_apply_normal(TransitionManager *localManager, Uni& uni, MyGraph *G, TempRamp *ramp,
                          int pool_id, int domain_id, State_t initial_state, State_t final_state){
     int staple_id = localManager->design->staple_pools[pool_id].domains[domain_id].staple_id;
@@ -253,10 +281,86 @@ void test_full(Simulation* sim){
 }
 
 void test_exact(Simulation* sim){
+    ofstream outfile;
+    open_trunc(outfile,"Exact.csv","");
+    outfile << "step" << ",";
+    outfile << "state" << ",";
+    outfile << "numBoundDomains" << ",";
+    outfile << "numStack" << ",";
+    outfile << "logsumC" << ",";
+    outfile << "G_duplex" << ",";
+    outfile << "G_stack" << ",";
+    outfile << "G_shape" << ",";
+    outfile << "\n";
+
+    //Constants *constants = sim->constants;
+    //TempRamp *ramp = sim->ramp;
+    double T = sim->ramp->get_T();
+    double gamma = sim->constants->gamma_parameter;
+    double nParam = sim->constants->n_parameter;
     Design *design = sim->design;
     StaplePool *pool = &(design->staple_pools[0]);
-    //vector<State_t> poolState(pool->num_staples);
 
+    vector<vector<State_t>> to_prod;
+    for (auto &staple : pool->staples){
+        to_prod.push_back(staple.possible_states);
+    }
+    vector<vector<State_t>> all_states = cartesian(to_prod);
+
+    int i = 0;
+    double G_duplex, G_stack, G_shape;
+    double logsumC;
+    int numBoundDomains, numStack;
+    for (auto &pstate : all_states){
+        if (i%10000==0) outfile << std::flush;
+
+        int stIdx = 0;
+        for (auto &state : pstate){
+            design->change_state(pool->staples.begin()+stIdx,state);
+            stIdx++;
+        }
+        MyGraph mygraph(design);
+        logsumC = mygraph.faces_weight();
+        G_shape = -(gas_constant * T * gamma ) * logsumC;
+        G_duplex = 0;
+
+        numBoundDomains = 0;
+        numStack = 0;
+        for (auto &domain : pool->domains){
+            G_duplex += domain.dH - T * domain.dS;
+            if (domain.state){
+                numBoundDomains++;
+                for (auto &stack : domain.stack_domains){
+                    if (stack->state)
+                        numStack++;
+                }
+            }
+        }
+        numStack /= 2;
+        G_stack = numStack * nParam * (dH_average - T * dS_average);
+
+        outfile << i << ",";
+        outfile << pstate << ",";
+        outfile << numBoundDomains << ",";
+        outfile << numStack << ",";
+        outfile << logsumC << ",";
+        outfile << G_duplex << ",";
+        outfile << G_stack << ",";
+        outfile << G_shape << ",";
+        outfile << "\n";
+
+        //std::cout << i << "\t";
+        //std::cout << pstate << "\t";
+        //std::cout << G_duplex << "\t";
+        //std::cout << G_stack << "\t";
+        //std::cout << G_shape << "\t";
+        //std::cout << std::endl;
+        std::cout << i << std::endl;
+        i++;
+    }
+    std::cout << all_states.size() << std::endl;
+
+    outfile.close();
     /*
     vector<Staple> staples = pool->staples;
     vector<vector<State_t>> all_states;
@@ -280,9 +384,6 @@ void test_exact(Simulation* sim){
         result.push_back(std::make_tuple(tuple));
     } while (!product.back().empty());
     */
-    for (auto&& t : ranges::views::cartesian_product(a, b, c) | ranges::views::all) {
-        std::cout << "(" << std::get<0>(t) << ", " << std::get<1>(t) << ", " << std::get<2>(t) << ")" << std::endl;
-    }
 
 }
 
@@ -316,6 +417,8 @@ int main(int argc, char * argv[]) {
 
         //test_loops(constants,G,design);
         //test_full(sim);
+    }
+    else if (inputs->exact){
         test_exact(sim);
         sim->ofiles->close_files();
     }

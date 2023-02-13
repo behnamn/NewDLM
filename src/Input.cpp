@@ -320,6 +320,7 @@ void Inputs::loadOptions(){
         test = false;
         convert = false;
         config_generator = false;
+        exact = false;
     }
 	else if (sim_type == "anneal"){
 		isothermal = false;
@@ -328,6 +329,7 @@ void Inputs::loadOptions(){
         test = false;
         convert = false;
         config_generator = false;
+        exact = false;
     }
 	else if (sim_type == "melt"){
 		isothermal = false;
@@ -336,6 +338,7 @@ void Inputs::loadOptions(){
         test = false;
         convert = false;
         config_generator = false;
+        exact = false;
 	}
     else if (sim_type == "test"){
         isothermal = false;
@@ -344,6 +347,7 @@ void Inputs::loadOptions(){
         test = true;
         convert = false;
         config_generator = false;
+        exact = false;
     }
     else if (sim_type == "convert"){
         isothermal = false;
@@ -352,6 +356,7 @@ void Inputs::loadOptions(){
         test = false;
         convert = true;
         config_generator = false;
+        exact = false;
     }
     else if (sim_type == "config_generator"){
         isothermal = false;
@@ -360,6 +365,16 @@ void Inputs::loadOptions(){
         test = false;
         convert = false;
         config_generator = true;
+        exact = false;
+    }
+    else if (sim_type == "exact"){
+        isothermal = false;
+        anneal = false;
+        melt = false;
+        test = false;
+        convert = false;
+        config_generator = false;
+        exact = true;
     }
 	else {
 		cout << "Please select a valid sim_type.\n";

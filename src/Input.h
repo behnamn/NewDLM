@@ -192,6 +192,7 @@ public:
     bool test;
     bool convert;
     bool config_generator;
+    bool exact;
 	
     bool track_clusters;
 

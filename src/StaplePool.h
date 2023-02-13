@@ -68,6 +68,8 @@ public:
     vector<string> crosspair_poss_state_names;
     vector<string> staple_poss_state_names;
     vector<string> helix_poss_state_names;
+
+
 };
 
 

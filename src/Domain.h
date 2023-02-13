@@ -63,9 +63,9 @@ public:
     vector< Stat<int> > stats; //index is the index of temperate in TempRamp::unique_Ts
     
     edge_t edge;
-    edge_t pseudo_edge;
-    pair<edge_t,bool> edge2;
 
+    pair<edge_t,bool> edge2;
+    //edge_t pseudo_edge;
     double ss_weight;
     double ds_weight;
 };

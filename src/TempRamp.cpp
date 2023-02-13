@@ -54,7 +54,7 @@ inputs(inputs_){
     this->melt = inputs->melt;
     this->isothermal = inputs->isothermal;
     
-    if (inputs->test || inputs->config_generator){
+    if (inputs->test || inputs->exact || inputs->config_generator){
         this->isothermal = true;
     }
     
