@@ -48,6 +48,7 @@ public:
     Inputs* inputs;
 	Design* design;
 	Graph g; //Graph of design subdomains
+    bool local;
 
     Comp_Graph cg; //Component graph for design (of g)
     vector<Comp_Graph> p_cg; //Component graphs for each pool
@@ -85,19 +86,10 @@ public:
     void write(const string&);
 
 
-
-
-
-
-
     //Redundant
     edge_t id_to_edge(int);
-    void complete();
-    //Redundant: Only used in complete()
-    void bind_domain(const SDOM, bool pseudo = false);
-    void unbind_domain(const SDOM, bool pseudo = false);
-    //Redundant: implemented within update_faces.
-    void update_embedding();
+
+
 };
 
 #endif

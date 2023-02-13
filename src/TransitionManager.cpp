@@ -302,13 +302,22 @@ void TransitionManager::set_dG_stack(TR& tr) {
 void TransitionManager::set_dG_shape(TR& tr, bool based_on_affected) {
     if (this->local){
         double E;
-        if (based_on_affected) {E = cs_hack + G->shortest_path(tr->affected_crossover.first);}
-        else {E = cs_hack + G->shortest_path(tr->crossover.first);}
-        tr->dG_shape = -(gas_constant * ramp->get_T()) * constants->gamma_parameter * log(constants->C_parameter / E);
+        if (based_on_affected && tr->affected_crossover.second) {
+            E = cs_hack + G->shortest_path(tr->affected_crossover.first);
+            tr->dG_shape = -(gas_constant * ramp->get_T()) * constants->gamma_parameter * log(constants->C_parameter / E);
+        }
+        else if (!based_on_affected && tr->crossover.second) {
+            E = cs_hack + G->shortest_path(tr->crossover.first);
+            tr->dG_shape = -(gas_constant * ramp->get_T()) * constants->gamma_parameter * log(constants->C_parameter / E);
+        }
+        else{
+            tr->dG_shape = 0;
+            //std::cout << "TransitionManager::set_dG_shape (local) should not be called." << std::endl;
+        }
     }
     else{
         double logsum0 = G->faces_weight();
-        tr->apply(G);
+        tr->apply(G,true);
         double logsum1 = G->faces_weight();
         tr->dG_shape = -(gas_constant * ramp->get_T() * constants->gamma_parameter ) *( logsum1 - logsum0 );
         tr->undo_apply(G);

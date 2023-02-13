@@ -80,7 +80,7 @@ public:
     double k_BM;
     
 	void decide_possible();
-	void apply(MyGraph*);
+	void apply(MyGraph*, bool pseudo = false);
 
     void undo_apply(MyGraph*);
 

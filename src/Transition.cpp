@@ -120,9 +120,9 @@ void Transition::decide_possible(){
     if (type == invasion && affected_staple->is_missing) possible = false;
 }
 
-void Transition::apply(MyGraph* G){
+void Transition::apply(MyGraph* G, bool pseudo){
     if(type == normal){
-        design->change_state(staple,final_state);
+        if (!pseudo) design->change_state(staple,final_state);
         if (properties.bind){
             G->bind_domain(domain);
             if(crossover.second){

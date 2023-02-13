@@ -123,6 +123,10 @@ MyGraph::MyGraph (Design* design_) : design(design_) {
     
     distances.resize(design->num_domains);
 
+    if (inputs->rate_model == "local"){this->local = true;}
+    else if (inputs->rate_model == "global"){this->local = false;}
+    else {printf ("Error:\t Select local or global rate model!\n"); exit (EXIT_FAILURE);}
+
     fill_components();
     //update_faces();
 }
@@ -249,7 +253,7 @@ void MyGraph::add_crossover(CR cross){
     EP.weight = cs_hack;
     EP.id = boost::num_edges(g);
     cross->edge = add_edge((cross->nodes.first)->id, (cross->nodes.second)->id, EP, g);
-    this->add2embedding(cross);
+    if (!local) this->add2embedding(cross);
 
     if (inputs->track_clusters){
         EP.id = boost::num_edges(cg.g);
@@ -260,7 +264,7 @@ void MyGraph::add_crossover(CR cross){
     }
 }
 void MyGraph::remove_crossover(CR cross){
-    this->removeFromEmbedding(cross);
+    if (!local) this->removeFromEmbedding(cross);
     remove_edge(cross->edge.first, g);
     cross->edge.second = false;
     reset_edge_index_single(g);
@@ -323,72 +327,89 @@ void MyGraph::reset_edge_index() {
 
 void MyGraph::add2embedding(const CR& cross){
     if (cross->type == 'l') return;
+    int pos1, pos2;
     int v1 = (cross->nodes.first)->id;
     int v2 = (cross->nodes.second)->id;
-    std::size_t num_existing_edges = embedding_storage[v1].size();
-    if (num_existing_edges == 2) {
-        if (cross->type == 'i' || cross->type == 's') {
-            embedding_storage[v1].insert(embedding_storage[v1].begin() + 1, cross->edge.first);
-            embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
+    std::size_t numEdgesV1 = embedding_storage[v1].size();
+    std::size_t numEdgesV2 = embedding_storage[v2].size();
+    if (numEdgesV1 != numEdgesV2) { // special case for 3-domain staples at edges
+        for (int v: {v1, v2}) {
+            if (embedding_storage[v].size() == 2) {
+                if (cross->type == 'i' || cross->type == 's') {
+                    pos1 = pos2 = 1;
+                }
+                else if (cross->type == 'o') {
+                    pos1 = pos2 = 2;
+                }
+                else {
+                    std::cout << "MyGraph::add2embedding: cross->type should be in {i,s,o,l}" << std::endl;
+                    return;
+                }
+                if (v==v1) embedding_storage[v1].insert(embedding_storage[v1].begin() + pos1, cross->edge.first);
+                if (v==v2) embedding_storage[v2].insert(embedding_storage[v2].begin() + pos2, cross->edge.first);
+            }
+            else if (embedding_storage[v].size() == 3) {
+                if (cross->type == 'i' || cross->type == 's') {
+                    pos1 = 2; pos2 = 1;
+                    if (v==v1) embedding_storage[v1].insert(embedding_storage[v1].begin() + pos1, cross->edge.first);
+                    if (v==v2) embedding_storage[v2].insert(embedding_storage[v2].begin() + pos2, cross->edge.first);
+                }
+                else if (cross->type == 'o') {
+                    int d0_otherV = circ_add(v, 1, design->num_domains);
+                    int d1_otherV = circ_substract(v, 1, design->num_domains);
+                    int c0_otherV = boost::source(embedding_storage[v][2], g);
+                    if (c0_otherV == v) c0_otherV = boost::target(embedding_storage[v][2], g);
+                    int c1_otherV = boost::source(cross->edge.first, g);
+                    if (c1_otherV == v) c1_otherV = boost::target(cross->edge.first, g);
+                    int a = abs(d0_otherV - c0_otherV);
+                    int b = abs(d1_otherV - c0_otherV);
+                    if (a > b)
+                        embedding_storage[v].insert(embedding_storage[v].begin() + 3, cross->edge.first);
+                    else
+                        embedding_storage[v].insert(embedding_storage[v].begin() + 2, cross->edge.first);
+                }
+                else {
+                    std::cout << "MyGraph::add2embedding: cross->type should be in {i,s,o,l}" << std::endl;
+                    return;
+                }
+            }
+            else {
+                std::cout << "MyGraph::add2embedding: vertex should have 2<n<4 edges." << std::endl;
+                return;
+            }
         }
-        else if (cross->type =='o'){
-            embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
-            embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
-        }
-    } else if (num_existing_edges == 3) {
-        if (cross->type == 'i' || cross->type == 's') {
-            //int pos = adjacent_edge_position(v1,edge,emb_storage[u],g);
-            embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
-            embedding_storage[v2].insert(embedding_storage[v2].begin() + 1, cross->edge.first);
-        }
-        /*
-        else if (cross->type =='o'){
-            embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
-            embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
-        }
-         */
-        else if (cross->type =='o') {
-            int d0_otherV = circ_add(v1, 1, design->num_domains);
-            int d1_otherV = circ_substract(v1, 1, design->num_domains);
-            int c0_otherV = boost::source(embedding_storage[v1][2], g);
-            if (c0_otherV == v1) c0_otherV = boost::target(embedding_storage[v1][2], g);
-            int c1_otherV = boost::source(cross->edge.first, g);
-            if (c1_otherV == v1) c1_otherV = boost::target(cross->edge.first, g);
-
-            if (c1_otherV == c0_otherV){
-                embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
+    }
+    else{
+        if (numEdgesV1 == 2) {
+            if (cross->type == 'i' || cross->type == 's') {
+                pos1 = pos2 = 1;
+            }
+            else if (cross->type == 'o'){
+                pos1 = pos2 = 2;
             }
             else{
-                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
-                int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
-                int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
-                if (a > b)
-                    embedding_storage[v1].insert(embedding_storage[v1].begin() + 3, cross->edge.first);
-                else
-                    embedding_storage[v1].insert(embedding_storage[v1].begin() + 2, cross->edge.first);
-            }
-
-            d0_otherV = circ_add(v2, 1, design->num_domains);
-            d1_otherV = circ_substract(v2, 1, design->num_domains);
-            c0_otherV = boost::source(embedding_storage[v2][2], g);
-            if (c0_otherV == v2) c0_otherV = boost::target(embedding_storage[v2][2], g);
-            c1_otherV = boost::source(cross->edge.first, g);
-            if (c1_otherV == v2) c1_otherV = boost::target(cross->edge.first, g);
-            if (c1_otherV == c0_otherV){
-                embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
-            }
-            else{
-                cout << "MUHAHAHAHAHAHAHAHAHHAHAHAHAHAHHA-----------------------------------------------------------" << endl;
-                int a = abs(circ_substract(d0_otherV, c0_otherV, design->num_domains));
-                int b = abs(circ_substract(d1_otherV, c0_otherV, design->num_domains));
-                if (a > b)
-                    embedding_storage[v2].insert(embedding_storage[v2].begin() + 3, cross->edge.first);
-                else
-                    embedding_storage[v2].insert(embedding_storage[v2].begin() + 2, cross->edge.first);
+                std::cout << "MyGraph::add2embedding: cross->type should be in {i,s,o,l}" << std::endl;
+                return;
             }
         }
-    } else {
-        std::cout << "Add Crossover:: vertex can only have 2 or 3 edges." << std::endl;
+        else if (numEdgesV1 == 3) {
+            if (cross->type == 'i' || cross->type == 's') {
+                pos1 = 2; pos2 = 1;
+            }
+            else if (cross->type == 'o') {
+                pos1 = 3; pos2 = 2;
+            }
+            else{
+                std::cout << "MyGraph::add2embedding: cross->type should be in {i,s,o,l}" << std::endl;
+                return;
+            }
+        }
+        else{
+            std::cout << "MyGraph::add2embedding: vertex should have 2<n<4 edges." << std::endl;
+            return;
+        }
+        embedding_storage[v1].insert(embedding_storage[v1].begin() + pos1, cross->edge.first);
+        embedding_storage[v2].insert(embedding_storage[v2].begin() + pos2, cross->edge.first);
     }
 }
 void MyGraph::removeFromEmbedding(const CR& cross){
@@ -437,13 +458,15 @@ double MyGraph::total_weight(const CR crossover) {
     return distanceMap[crossover->node_ids.second];
 }
  */
+
 double MyGraph::shortest_path(const CR crossover) {
     DistanceMap distanceMap(&distances[0], get(vertex_index, g));
     edge_t edge;
+    int i = 0;
     if (crossover->edge.second){
         edge = crossover->edge.first;
         boost::remove_edge(edge, g);
-        removeFromEmbedding(crossover);
+        if (!local) removeFromEmbedding(crossover);
         reset_edge_index();
         dijkstra_shortest_paths_no_color_map(g, crossover->node_ids.first,
                                          weight_map(get(&EdgeProperty::weight, g)).
@@ -454,7 +477,7 @@ double MyGraph::shortest_path(const CR crossover) {
         EP.crossover = make_pair(crossover,true);
         EP.weight = cs_hack;
         crossover->edge = add_edge((crossover->nodes.first)->id, (crossover->nodes.second)->id, EP, g);
-        add2embedding(crossover);
+        if (!local) this->add2embedding(crossover);
     }
     else{
         dijkstra_shortest_paths_no_color_map(g, crossover->node_ids.first,
@@ -465,7 +488,15 @@ double MyGraph::shortest_path(const CR crossover) {
     //cout << distanceMap[crossover->node_ids.second] << endl;
     return distanceMap[crossover->node_ids.second];
 }
-
+ /*
+double MyGraph::shortest_path(const CR crossover) {
+    DistanceMap distanceMap(&distances[0], get(vertex_index, g));
+    dijkstra_shortest_paths_no_color_map(g, crossover->node_ids.first,
+                                         weight_map(get(&EdgeProperty::weight, g)).
+                                                 distance_map(distanceMap));
+    return distanceMap[crossover->node_ids.second];
+}
+*/
 //Component methods
 void MyGraph::fill_components(){
     if (inputs->track_clusters){
@@ -567,24 +598,6 @@ void MyGraph::write(const string& filename) {
 
 
 
-
-
-
-
-
-//Redundant:
-void MyGraph::complete(){//Make full graph
-    for (auto dom = design->domains.begin(); dom!=design->domains.end(); ++dom){
-        bind_domain(dom);
-    }
-    for (auto pool = design->staple_pools.begin(); pool!= design->staple_pools.end(); ++pool){
-        for (auto cr = pool->crossovers.begin(); cr!=pool->crossovers.end(); ++cr){
-            if (cr->type!='l'){
-                add_crossover(cr);
-            }
-        }
-    }
-}
 edge_t MyGraph::id_to_edge(int i){
     edge_t result;
     edge_iterator_t ei,ef;
@@ -598,27 +611,5 @@ edge_t MyGraph::id_to_edge(int i){
     return result;
 }
 
-//Redundant: Only used in complete()
-void MyGraph::bind_domain(const SDOM domain, bool pseudo){
-    g[domain->edge].weight = domain->length * domain->length * ds_hack;
-    //g[domain->edge].type = 'd';
-    //New
-    EdgeProperty EP;
-    EP.crossover.second = false;
-    EP.id = domain->id;
-    //EP.domain = make_pair(domain,true);
-    EP.domain_s = make_pair(domain,true);
-    domain->edge2 = add_edge(domain->node_ids.first, domain->node_ids.second, EP, cg.g);
-    reset_vertex_index();
-    reset_edge_index();
-}
-void MyGraph::unbind_domain(const SDOM domain, bool pseudo){
-    g[domain->edge].weight = domain->length * ss_hack;
-    //g[domain->edge].type = 's';
-    //New
-    remove_edge(domain->edge2.first, cg.g);
-    domain->edge2.second = false;
-    reset_vertex_index();
-    reset_edge_index();
-}
+
 

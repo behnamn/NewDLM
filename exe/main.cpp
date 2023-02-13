@@ -107,34 +107,7 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
 void test_full(Simulation* sim){
     auto trManager = sim->trManager;
 
-    /*
-    std::cout << trManager->transitions.size() << endl;
-
-    TransitionMap M;
-    State_names state_names;
-    for (auto &tp : M.FullMap){
-        if (tp.second.allowed){
-            std::cout << state_names.array(tp.first.first) << "\t";
-            std::cout << state_names.array(tp.first.second) << std::endl;
-        }
-    }
-    trManager->reset_possibles();
-    trManager->fill_rates();
-
-
-    for (auto &tpair : trManager->transition_pairs){
-        std::cout << *(tpair.first) << "\t" << *(tpair.second) << std::endl;
-    }
-
-    for (auto &tr : trManager->transitions){
-        tr.decide_possible();
-        if (tr.possible){
-            tr.print();
-        }
-    }
-     */
-
-
+    print_embedding_storage(sim->G->g, sim->G->embedding_storage);
 
     Design* design = trManager->design;
     StaplePool* pool = &design->staple_pools[0];
@@ -154,24 +127,24 @@ void test_full(Simulation* sim){
         for (auto &trans : st.transitions){
             if (st.num_domains == 2 && trans->initial_state == State_t(s01) && trans->final_state == State_t(s11))
                 path.push_back(trans);
-            if (st.num_domains == 3 && st.id <= 40 && trans->initial_state == State_t(s001) && trans->final_state == State_t(s101))
+            if (st.num_domains == 3 && st.id <= 0 && trans->initial_state == State_t(s001) && trans->final_state == State_t(s101))
                 path.push_back(trans);
-            if (st.num_domains == 3 && st.id > 40 && trans->initial_state == State_t(s001) && trans->final_state == State_t(s011))
+            if (st.num_domains == 3 && st.id > 0 && trans->initial_state == State_t(s001) && trans->final_state == State_t(s011))
                 path.push_back(trans);
         }
     }
     for (auto &st: pool->staples){
         for (auto &trans : st.transitions){
-            if (st.num_domains == 3 && st.id > 40 && trans->initial_state == State_t(s011) && trans->final_state == State_t(s111))
+            if (st.num_domains == 3 && st.id > 0 && trans->initial_state == State_t(s011) && trans->final_state == State_t(s111))
                 path.push_back(trans);
         }
     }
-    for (auto &trans : path){
-        reverse_path.push_back(&(*(trans->reverse)));
+    for (auto tr = path.rbegin(); tr!=path.rend(); ++tr){
+        reverse_path.push_back(&(*((*tr)->reverse)));
     }
 
-    std::cout << "--------------------------------------------------------------- ";
-    std::cout << trManager->G->faces_weight();
+    std::cout << "--------------------------------------------------------------- Binding";
+    if (!trManager->local) std::cout << trManager->G->faces_weight();
     std::cout << std::endl;
 
     double k_bi = trManager->inputs->k_bi;
@@ -184,12 +157,12 @@ void test_full(Simulation* sim){
 
         trManager->set_dG_duplex(trManager->next);
         trManager->set_dG_stack(trManager->next);
-        //trManager->set_dG_shape(trManager->next);
-        trManager->next->dG_shape = 0;
+        trManager->set_dG_shape(trManager->next);
+        //trManager->next->dG_shape = 0;
 
         if (tr->uni){
             if (tr->forward){
-                trManager->set_dG_shape(trManager->next);
+                //trManager->set_dG_shape(trManager->next);
                 tr->dG = tr->dG_shape;
                 tr->rate = k_uni * exp( -tr->dG / RT );
             }
@@ -203,7 +176,7 @@ void test_full(Simulation* sim){
                 tr->rate = k_bi * tr->staple->concentration;
             }
             else{
-                if (!trManager->local){trManager->set_dG_shape(trManager->next);}
+                //if (!trManager->local){trManager->set_dG_shape(trManager->next);}
                 tr->dG = tr->dG_duplex+tr->dG_stack-tr->dG_shape;
                 tr->rate = k_uni * exp( tr->dG / RT );
             }
@@ -223,9 +196,11 @@ void test_full(Simulation* sim){
         trManager->apply_next();
     }
 
-    std::cout << "--------------------------------------------------------------- ";
-    std::cout << trManager->G->faces_weight();
+    std::cout << "--------------------------------------------------------------- Unbinding";
+    if (!trManager->local) std::cout << trManager->G->faces_weight();
     std::cout << std::endl;
+
+
 
     for (auto &tr : reverse_path){
         trManager->reset_possibles();
@@ -238,7 +213,7 @@ void test_full(Simulation* sim){
 
         if (tr->uni){
             if (tr->forward){
-                trManager->set_dG_shape(trManager->next);
+                //trManager->set_dG_shape(trManager->next);
                 tr->dG = tr->dG_shape;
                 tr->rate = k_uni * exp( -tr->dG / RT );
             }
@@ -252,7 +227,7 @@ void test_full(Simulation* sim){
                 tr->rate = k_bi * tr->staple->concentration;
             }
             else{
-                if (!trManager->local){trManager->set_dG_shape(trManager->next);}
+                //if (!trManager->local){trManager->set_dG_shape(trManager->next);}
                 tr->dG = tr->dG_duplex+tr->dG_stack-tr->dG_shape;
                 tr->rate = k_uni * exp( tr->dG / RT );
             }
@@ -273,7 +248,7 @@ void test_full(Simulation* sim){
     }
 
     std::cout << "--------------------------------------------------------------- ";
-    std::cout << trManager->G->faces_weight();
+    if (!trManager->local) std::cout << trManager->G->faces_weight();
     std::cout << std::endl;
 }
 

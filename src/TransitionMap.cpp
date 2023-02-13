@@ -44,7 +44,7 @@ TransitionMap::TransitionMap(){
 		}
 	}
 
-    FullMap[make_pair(s111,s101)] = TP(false,0,2);
+    //FullMap[make_pair(s111,s101)] = TP(false,0,2);
 }
 
 void TransitionMap::print(){
