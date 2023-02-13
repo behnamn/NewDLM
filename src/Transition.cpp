@@ -138,7 +138,7 @@ void Transition::apply(MyGraph* G, bool pseudo){
     }
     else if (type == invasion){
         if (properties.bind && !affected_properties.bind){
-            design->change_state(affected_staple,affected_final_state);
+            if (!pseudo) design->change_state(affected_staple,affected_final_state);
             G->unbind_domain(affected_domain);
             if(affected_crossover.second){
                 G->remove_crossover(affected_crossover.first);
@@ -147,10 +147,10 @@ void Transition::apply(MyGraph* G, bool pseudo){
             if(crossover.second){
                 G->add_crossover(crossover.first);
             }
-            design->change_state(staple,final_state);
+            if (!pseudo) design->change_state(staple,final_state);
         }
         else if (!properties.bind && affected_properties.bind){
-            design->change_state(staple,final_state);
+            if (!pseudo) design->change_state(staple,final_state);
             G->unbind_domain(domain);
             if(crossover.second){
                 G->remove_crossover(crossover.first);
@@ -159,7 +159,7 @@ void Transition::apply(MyGraph* G, bool pseudo){
             if(affected_crossover.second){
                 G->add_crossover(affected_crossover.first);
             }
-            design->change_state(affected_staple,affected_final_state);
+            if (!pseudo) design->change_state(affected_staple,affected_final_state);
         }
         else{
             cout << "Error in Transition::apply: invasion reaction is neither bind-unbind or unbind-bind!";
