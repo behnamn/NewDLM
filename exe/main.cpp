@@ -360,6 +360,32 @@ void calculate_Tm(Simulation* sim){
 
 }
 
+void test_random(){
+    int myidx;
+
+    int inputrandom = 12341;
+    base_generator_type generator(12341);
+    typedef boost::variate_generator<base_generator_type&, uniform_int<> > UniformInt_gen;
+
+    std::vector<int> myvec = {3,5,647,4352,7,4,2};
+    uniform_int<> uniformInt(0, myvec.size()-1);
+    UniformInt_gen uni(generator,uniformInt);
+
+    for (int i = 0; i < 100; i++){
+        myidx = uni();
+        std::cout << i << "\t" << myidx << "\t" << myvec[myidx] << std::endl;
+    }
+
+    std::vector<int> myvec2 = {3,5,647,4352,7,4,2,6,12,65,2,1};
+    uniform_int<> uniformInt2(0, myvec2.size()-1);
+    UniformInt_gen uni2(generator,uniformInt2);
+
+    for (int i = 0; i < 100; i++){
+        myidx = uni2();
+        std::cout << i << "\t" << myidx << "\t" << myvec2[myidx] << std::endl;
+    }
+}
+
 void exact(Simulation* sim){
     ofstream outfile;
     open_trunc(outfile,"Exact.csv","");
@@ -474,6 +500,7 @@ int main(int argc, char * argv[]) {
 
         //test_loops(constants,G,design);
         //test_full(sim);
+        test_random();
     }
     else if (inputs->exact){
         //calculate_Tm(sim);

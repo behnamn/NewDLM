@@ -15,7 +15,6 @@ OrderParameter2D::OrderParameter2D(OrderParameter* OP1_, OrderParameter* OP2_) :
     state.first = OP1->state;
     state.second = OP2->state;
 }
-
 void OrderParameter2D::set_new_value(){
     prev_state = state;
     state.first = OP1->state;
@@ -25,6 +24,10 @@ void OrderParameter2D::update(const double tau){
     count[state]++;
     time[state]+= tau;
 }
+
+
+
+
 OPManager::OPManager(StatManager* statManager_): statManager(statManager_){
     inputs = statManager->inputs;
     design = statManager->design;

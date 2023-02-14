@@ -48,36 +48,31 @@ void Simulation::write_movie(){
 }
 
 void Simulation::prepare_config(){
+
     base_generator_type generator(inputs->seed);
-    uniform_real<> uni_dist(0,1);
-    Uni uni(generator, uni_dist);
-    
+    typedef boost::variate_generator<base_generator_type&, uniform_int<> > UniformInt_gen;
+    int randIdx;
+
     int current_OPval, target_OPval;
     current_OPval = this->opManager->biased.second->state;
     vector<int> possible_OPvals;
     for (const auto& it : this->opManager->biased.second->weight){
         possible_OPvals.push_back(it.first);
     }
-    target_OPval = (*possible_OPvals.begin() + *std::prev(possible_OPvals.end()) ) /2;
-    
+    //target_OPval = (*possible_OPvals.begin() + *std::prev(possible_OPvals.end()) ) /2;
+    uniform_int<> uniformInt(0, possible_OPvals.size()-1);
+    UniformInt_gen uni(generator,uniformInt);
+    randIdx = uni();
+    target_OPval = possible_OPvals[randIdx];
+
+
     vector<Transition*> possible_trs;
-    double myrand;
-    int myidx;
-    
     while (target_OPval != current_OPval){
         //cout << current_OPval << "\t" << target_OPval << endl;
         trManager->reset_possibles();
         possible_trs.clear();
         for (auto& tr : this->trManager->transitions){
-            if (tr.possible &&
-                tr.final_state!=s12 && tr.final_state!=s101 &&
-                tr.final_state!=s012 && tr.final_state!=s120 && tr.final_state!=s102 &&
-                tr.final_state!=s112 && tr.final_state!=s211 && tr.final_state!=s121 &&
-                tr.final_state!=s123 &&
-                tr.initial_state!=s12 && tr.initial_state!=s101 &&
-                tr.initial_state!=s012 && tr.initial_state!=s120 && tr.initial_state!=s102 &&
-                tr.initial_state!=s112 && tr.initial_state!=s211 && tr.initial_state!=s121 &&
-                tr.initial_state!=s123){
+            if (tr.possible){
                 if (target_OPval > current_OPval){ //binds (normal) and forwards (invasion)
                     if (tr.type == normal){
                         if (tr.pool == opManager->biased.second->pool_id){
@@ -106,14 +101,15 @@ void Simulation::prepare_config(){
                 }
             }
         }
-        myrand = uni();
-        myidx = myrand * possible_trs.size();
-        possible_trs[myidx]->apply(G);
+        uniform_int<> uniformInt2(0, possible_trs.size()-1);
+        UniformInt_gen uni2(generator,uniformInt2);
+        randIdx = uni2();
+        possible_trs[randIdx]->apply(G);
         G->fill_components();
-        //if(!trManager->local) G->update_faces();
+
         current_OPval = this->opManager->biased.second->state;
-        //cout << current_OPval << endl;
     }
+
 }
 
 void Simulation::run(){

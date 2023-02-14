@@ -227,6 +227,6 @@ public:
 };
 
 typedef boost::mt19937 base_generator_type;
-typedef variate_generator<base_generator_type&, uniform_real<> > Uni;
+typedef boost::variate_generator<base_generator_type&, uniform_real<> > Uni;
 
 #endif
