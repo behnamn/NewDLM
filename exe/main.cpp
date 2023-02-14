@@ -280,21 +280,10 @@ void test_full(Simulation* sim){
     std::cout << std::endl;
 }
 
-void test_exact(Simulation* sim){
+void calculate_Tm(Simulation* sim){
     ofstream outfile;
-    open_trunc(outfile,"Exact.csv","");
-    outfile << "step" << ",";
-    outfile << "state" << ",";
-    outfile << "numBoundDomains" << ",";
-    outfile << "numStack" << ",";
-    outfile << "logsumC" << ",";
-    outfile << "G_duplex" << ",";
-    outfile << "G_stack" << ",";
-    outfile << "G_shape" << ",";
-    outfile << "\n";
+    open_trunc(outfile,"Tm.txt","");
 
-    //Constants *constants = sim->constants;
-    //TempRamp *ramp = sim->ramp;
     double T = sim->ramp->get_T();
     double gamma = sim->constants->gamma_parameter;
     double nParam = sim->constants->n_parameter;
@@ -310,12 +299,17 @@ void test_exact(Simulation* sim){
     int i = 0;
     double G_duplex, G_stack, G_shape;
     double logsumC;
-    int numBoundDomains, numStack;
+    int numBoundDomains, numStack, numStapleCopies;
     for (auto &pstate : all_states){
         if (i%10000==0) outfile << std::flush;
 
         int stIdx = 0;
+        numStapleCopies = 0;
         for (auto &state : pstate){
+            if (state == s0 || state == s00){}
+            else if (state == s1 || state == s01 || state == s10 || state == s11){numStapleCopies++;}
+            else if (state == s12){numStapleCopies+=2;}
+            else{std::cout << "state not recognised!" << std::endl;}
             design->change_state(pool->staples.begin()+stIdx,state);
             stIdx++;
         }
@@ -327,8 +321,8 @@ void test_exact(Simulation* sim){
         numBoundDomains = 0;
         numStack = 0;
         for (auto &domain : pool->domains){
-            G_duplex += domain.dH - T * domain.dS;
             if (domain.state){
+                G_duplex += domain.dH - T * domain.dS;
                 numBoundDomains++;
                 for (auto &stack : domain.stack_domains){
                     if (stack->state)
@@ -342,11 +336,12 @@ void test_exact(Simulation* sim){
         outfile << i << ",";
         outfile << pstate << ",";
         outfile << numBoundDomains << ",";
+        outfile << numStapleCopies << ",";
         outfile << numStack << ",";
         outfile << logsumC << ",";
         outfile << G_duplex << ",";
         outfile << G_stack << ",";
-        outfile << G_shape << ",";
+        outfile << G_shape;
         outfile << "\n";
 
         //std::cout << i << "\t";
@@ -361,30 +356,92 @@ void test_exact(Simulation* sim){
     std::cout << all_states.size() << std::endl;
 
     outfile.close();
-    /*
-    vector<Staple> staples = pool->staples;
-    vector<vector<State_t>> all_states;
-    std::vector<std::tuple<State_t>> result;
-    std::vector<std::vector<State_t>> product;
 
-    for (const auto& staple : staples) {
-        all_states.push_back(staple.possible_states);
+
+}
+
+void exact(Simulation* sim){
+    ofstream outfile;
+    open_trunc(outfile,"Exact.csv","");
+    outfile << "step" << ",";
+    outfile << "state" << ",";
+    outfile << "numBoundDomains" << ",";
+    outfile << "numStapleCopies" << ",";
+    outfile << "numStack" << ",";
+    outfile << "logsumC" << ",";
+    outfile << "G_duplex" << ",";
+    outfile << "G_stack" << ",";
+    outfile << "G_shape";
+    outfile << "\n";
+
+    //Constants *constants = sim->constants;
+    //TempRamp *ramp = sim->ramp;
+    double T = sim->ramp->get_T();
+    double gamma = sim->constants->gamma_parameter;
+    double nParam = sim->constants->n_parameter;
+    std::cout << gamma << "\t" << nParam << std::endl;
+    Design *design = sim->design;
+    StaplePool *pool = &(design->staple_pools[0]);
+
+    vector<vector<State_t>> to_prod;
+    for (auto &staple : pool->staples){
+        to_prod.push_back(staple.possible_states);
     }
-    for (const auto& states : all_states) {
-        product.push_back(states);
-    }
-    std::reverse(product.begin(), product.end());
-    do {
-        std::vector<State_t> tuple;
-        for (const auto& states : product) {
-            tuple.push_back(states.back());
-            states.pop_back();
+    vector<vector<State_t>> all_states = cartesian(to_prod);
+
+    int i = 0;
+    double G_duplex, G_stack, G_shape;
+    double logsumC;
+    int numBoundDomains, numStack, numStapleCopies;
+    for (auto &pstate : all_states){
+        if (i%10000==0) {
+            std::cout << i << std::endl;
+            outfile << std::flush;
         }
-        std::reverse(tuple.begin(), tuple.end());
-        result.push_back(std::make_tuple(tuple));
-    } while (!product.back().empty());
-    */
 
+        int stIdx = 0;
+        numStapleCopies = 0;
+        for (auto &state : pstate){
+            if (state == s0 || state == s00){}
+            else if (state == s1 || state == s01 || state == s10 || state == s11){numStapleCopies++;}
+            else if (state == s12){numStapleCopies+=2;}
+            else{std::cout << "state not recognised!" << std::endl;}
+            design->change_state(pool->staples.begin()+stIdx,state);
+            stIdx++;
+        }
+        MyGraph mygraph(design);
+        logsumC = mygraph.faces_weight();
+        G_shape = -(gas_constant * T * gamma ) * logsumC;
+        G_duplex = 0;
+
+        numBoundDomains = 0;
+        numStack = 0;
+        for (auto &domain : pool->domains){
+            if (domain.state){
+                G_duplex += domain.dH - T * domain.dS;
+                numBoundDomains++;
+                for (auto &stack : domain.stack_domains){
+                    if (stack->state)
+                        numStack++;
+                }
+            }
+        }
+        numStack /= 2;
+        G_stack = numStack * nParam * (dH_average - T * dS_average);
+        outfile << i << ",";
+        outfile << pstate << ",";
+        outfile << numBoundDomains << ",";
+        outfile << numStapleCopies << ",";
+        outfile << numStack << ",";
+        outfile << logsumC << ",";
+        outfile << G_duplex << ",";
+        outfile << G_stack << ",";
+        outfile << G_shape;
+        outfile << "\n";
+        i++;
+    }
+    std::cout << all_states.size() << std::endl;
+    outfile.close();
 }
 
 int main(int argc, char * argv[]) {
@@ -419,7 +476,8 @@ int main(int argc, char * argv[]) {
         //test_full(sim);
     }
     else if (inputs->exact){
-        test_exact(sim);
+        //calculate_Tm(sim);
+        exact(sim);
         sim->ofiles->close_files();
     }
     else if (inputs->config_generator){
