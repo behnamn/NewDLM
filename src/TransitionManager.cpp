@@ -319,7 +319,6 @@ void TransitionManager::set_dG_stack(TR& tr) {
 
 }
 
-// global2
 void TransitionManager::set_dG_shape(TR& tr, bool based_on_affected) {
     if (this->local){
         double E;
