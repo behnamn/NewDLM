@@ -247,6 +247,7 @@ void MyGraph::unbind_domains(vector<SDOM>& domains){
     }
 }
 void MyGraph::add_crossover(CR cross){
+    if (cross->type == 'l') numLong++;
     EdgeProperty EP;
     EP.domain.second = false;
     EP.crossover = make_pair(cross,true);
@@ -264,6 +265,7 @@ void MyGraph::add_crossover(CR cross){
     }
 }
 void MyGraph::remove_crossover(CR cross){
+    if (cross->type == 'l') numLong--;
     if (!local) this->removeFromEmbedding(cross);
     remove_edge(cross->edge.first, g);
     cross->edge.second = false;
@@ -422,16 +424,18 @@ void MyGraph::removeFromEmbedding(const CR& cross){
 }
 double MyGraph::faces_weight() {
     double result = 0;
-    double C_parameter = 2.8 * pow(10,-18);
     remove_long_crossovers(g, design);
 
     traversal_visitor outvis(g);
     set_face_data(g, embedding_storage, outvis);
     result += outvis.logsum;
+    this->numFaces = outvis.numFaces;
     for (auto pool = design->staple_pools.begin(); pool!=design->staple_pools.end(); ++pool) {
         for (auto cross = pool->crossovers.begin(); cross!=pool->crossovers.end(); ++cross){
             if (cross->type == 'l' && cross->edge.second) {
-                result += log(C_parameter / (cs_hack + long_pathweight(cross)));
+                //result += log(C_parameter / (cs_hack + long_pathweight(cross)));
+                //result += log(1 / (cs_hack + long_pathweight(cross)));
+                result -= log(cs_hack + long_pathweight(cross));
             }
         }
     }
@@ -462,7 +466,6 @@ double MyGraph::total_weight(const CR crossover) {
 double MyGraph::shortest_path(const CR crossover) {
     DistanceMap distanceMap(&distances[0], get(vertex_index, g));
     edge_t edge;
-    int i = 0;
     if (crossover->edge.second){
         edge = crossover->edge.first;
         boost::remove_edge(edge, g);

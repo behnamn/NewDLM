@@ -13,7 +13,7 @@
 
 void print_embedding_storage(Graph&, planar_embedding_storage_t&);
 
-const double C_parameter = 2.8 * pow(10,-18);
+//const double C_parameter = 2.8 * pow(10,-18);
 
 
 struct traversal_visitor : public boost::planar_face_traversal_visitor {

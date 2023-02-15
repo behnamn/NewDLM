@@ -86,9 +86,8 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
     //cout << constants->C_parameter << "\t" << log(constants->C_parameter) << endl;
     design->staple_pools[0].print_crossovers();
 
-    double W = 0;
-    double Gshape = G->faces_weight();
-    double Gshape2 = G->faces_weight();
+    double Wshape = G->faces_weight();
+    double Gshape = ( (G->numFaces + G->numLong) * log(constants->C_parameter) ) + Wshape;
     /*
     for (auto loop = G->Faces.faces.begin(); loop != G->Faces.faces.end(); ++loop){
         loop->calculate_weight(G->g);
@@ -96,7 +95,7 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
         Gshape+= log(constants->C_parameter / loop->weight);
     }*/
     //G->Faces.print();
-    cout << "Total W = " << W << endl;
+    cout << "Total W = " << Wshape << endl;
     cout << "Gshape = " << Gshape << endl;
 
     double Wlast, Glast, Wlocal;
@@ -108,7 +107,8 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
         G->bind_domain(cross->domains.first);
         G->bind_domain(cross->domains.second);
         G->add_crossover(cross);
-        Gshape = G->faces_weight();
+        Wshape = G->faces_weight();
+        Gshape = ( (G->numFaces + G->numLong) * log(constants->C_parameter) ) + Wshape;
         Wlocal = G->shortest_path(cross);
         cout << "Gshape = " << Gshape << endl;
         cout << "Delta Gshape = " << Gshape - Glast << endl;
@@ -119,12 +119,13 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
          cross != design->staple_pools[0].crossovers.end(); ++cross){
         std::cout << "--------------------------------------------------------------- removing cr ";
         std::cout << cross->id << std::endl;
-        Wlast = W;
+        Wlast = Wshape;
         Glast = Gshape;
         G->unbind_domain(cross->domains.first);
         G->unbind_domain(cross->domains.second);
         G->remove_crossover(cross);
-        Gshape = G->faces_weight();
+        Wshape = G->faces_weight();
+        Gshape = ( (G->numFaces + G->numLong) * log(constants->C_parameter) ) + Wshape;
         Wlocal = G->shortest_path(cross);
         cout << "Gshape = " << Gshape << endl;
         cout << "Delta Gshape = " << Gshape - Glast << endl;
@@ -134,6 +135,7 @@ void test_loops(Constants* constants, MyGraph *G,  Design *design){
 
 void test_full(Simulation* sim){
     auto trManager = sim->trManager;
+    MyGraph *G = trManager->G;
 
     print_embedding_storage(sim->G->g, sim->G->embedding_storage);
 
@@ -172,12 +174,17 @@ void test_full(Simulation* sim){
     }
 
     std::cout << "--------------------------------------------------------------- Binding";
-    if (!trManager->local) std::cout << trManager->G->faces_weight();
+    if (!trManager->local){
+        double Wshape, Gshape;
+        Wshape = G->faces_weight();
+        Gshape = ( (G->numFaces + G->numLong) * log(trManager->constants->C_parameter) ) + Wshape;
+        std::cout << Wshape << "\t" << Gshape;
+    }
     std::cout << std::endl;
 
     double k_bi = trManager->inputs->k_bi;
     double k_uni = trManager->inputs->k_uni;
-    double RT = gas_constant * 273.15+50;
+    double RT = gas_constant * trManager->ramp->get_T();
 
     for (auto &tr : path){
         trManager->reset_possibles();
@@ -225,7 +232,12 @@ void test_full(Simulation* sim){
     }
 
     std::cout << "--------------------------------------------------------------- Unbinding";
-    if (!trManager->local) std::cout << trManager->G->faces_weight();
+    if (!trManager->local) {
+        double Wshape, Gshape;
+        Wshape = G->faces_weight();
+        Gshape = ( (G->numFaces + G->numLong) * log(trManager->constants->C_parameter) ) + Wshape;
+        std::cout << Wshape << "\t" << Gshape;
+    }
     std::cout << std::endl;
 
 
@@ -276,7 +288,12 @@ void test_full(Simulation* sim){
     }
 
     std::cout << "--------------------------------------------------------------- ";
-    if (!trManager->local) std::cout << trManager->G->faces_weight();
+    if (!trManager->local) {
+        double Wshape, Gshape;
+        Wshape = G->faces_weight();
+        Gshape = ( (G->numFaces + G->numLong) * log(trManager->constants->C_parameter) ) + Wshape;
+        std::cout << Wshape << "\t" << Gshape;
+    }
     std::cout << std::endl;
 }
 
@@ -324,6 +341,7 @@ void exact(Simulation* sim){
     //TempRamp *ramp = sim->ramp;
     double T = sim->ramp->get_T();
     double gamma = sim->constants->gamma_parameter;
+    double cParameter = sim->constants->C_parameter;
     double nParam = sim->constants->n_parameter;
     std::cout << gamma << "\t" << nParam << std::endl;
     Design *design = sim->design;
@@ -337,7 +355,7 @@ void exact(Simulation* sim){
 
     int i = 0;
     double G_duplex, G_stack, G_shape;
-    double logsumC;
+    double logsumC, Wshape;
     int numBoundDomains, numStack, numStapleCopies;
     for (auto &pstate : all_states){
         if (i%10000==0) {
@@ -356,7 +374,9 @@ void exact(Simulation* sim){
             stIdx++;
         }
         MyGraph mygraph(design);
-        logsumC = mygraph.faces_weight();
+        //logsumC = mygraph.faces_weight();
+        Wshape = mygraph.faces_weight();
+        logsumC = ( (mygraph.numFaces + mygraph.numLong) * log(cParameter) ) + Wshape;
         G_shape = -(gas_constant * T * gamma ) * logsumC;
         G_duplex = 0;
 
@@ -390,7 +410,7 @@ void exact(Simulation* sim){
     outfile.close();
 }
 
-void set_shape_values(const vector<State_t> &pstate, const double &gamma,
+void set_shape_values(const vector<State_t> &pstate, const double &gamma, const double &cParameter,
                       Design *design, double &S_shape, int &numStapleCopies){
     StaplePool *pool = &(design->staple_pools[0]);
     int stIdx = 0;
@@ -411,7 +431,10 @@ void set_shape_values(const vector<State_t> &pstate, const double &gamma,
         stIdx++;
     }
     MyGraph mygraph(design);
-    double logsumC = mygraph.faces_weight();
+
+    double Wshape = mygraph.faces_weight();
+    double logsumC = ( (mygraph.numFaces + mygraph.numLong) * log(cParameter) ) + Wshape;
+
     S_shape = gas_constant * gamma * logsumC;
 }
 void set_duplex_values(const vector<State_t> &pstate, const StaplePool* pool,
@@ -441,6 +464,7 @@ double calculate_Tm(Simulation* sim){
     //open_trunc(outfile,"Exact.csv","");
 
     double gamma = sim->constants->gamma_parameter;
+    double cParameter = sim->constants->C_parameter;
     double nParam = sim->constants->n_parameter;
     Design *design = sim->design;
     StaplePool *pool = &design->staple_pools[0];
@@ -460,9 +484,9 @@ double calculate_Tm(Simulation* sim){
     double Hf_duplex, Hf_stack, Sf_duplex, Sf_stack, Sf_shape;
     int numStapleCopies0, numStapleCopiesf;
 
-    set_shape_values(empty,gamma,design,S0_shape,numStapleCopies0);
+    set_shape_values(empty,gamma,cParameter,design,S0_shape,numStapleCopies0);
     set_duplex_values(empty,pool,nParam,H0_duplex,H0_stack,S0_duplex,S0_stack);
-    set_shape_values(target,gamma,design,Sf_shape,numStapleCopiesf);
+    set_shape_values(target,gamma,cParameter,design,Sf_shape,numStapleCopiesf);
     set_duplex_values(target,pool,nParam,Hf_duplex,Hf_stack,Sf_duplex,Sf_stack);
 
     double conc = 100;
@@ -528,7 +552,8 @@ int main(int argc, char * argv[]) {
         //G->print_embedding();
 
         //test_loops(constants,G,design);
-        test_full(sim);
+        //test_full(sim);
+        double Tm = calculate_Tm(sim);
         //test_random();
     }
     else if (inputs->exact){

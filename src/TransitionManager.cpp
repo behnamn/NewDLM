@@ -336,9 +336,13 @@ void TransitionManager::set_dG_shape(TR& tr, bool based_on_affected) {
         }
     }
     else{
-        double logsum0 = G->faces_weight();
+        // Have to run G->faces_weight() before to set numFaces.
+        double facesWeight;
+        facesWeight = G->faces_weight();
+        double logsum0 = ( (G->numFaces + G->numLong) * log(constants->C_parameter) ) + facesWeight;
         tr->apply(G,true);
-        double logsum1 = G->faces_weight();
+        facesWeight = G->faces_weight();
+        double logsum1 = ( (G->numFaces + G->numLong) * log(constants->C_parameter) ) + facesWeight;
         tr->dG_shape = -(gas_constant * ramp->get_T() * constants->gamma_parameter ) *( logsum1 - logsum0 );
         tr->undo_apply(G);
     }

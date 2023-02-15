@@ -76,7 +76,8 @@ public:
     void add2embedding(const CR& cross);
     void removeFromEmbedding(const CR& cross);
     double faces_weight();
-
+    int numLong = 0;
+    int numFaces; // not including long crossovers.
 
     void fill_components();
 

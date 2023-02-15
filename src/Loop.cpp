@@ -53,24 +53,13 @@ void traversal_visitor::end_face() {
     //std::cout << "] " << face_weight << " }";
     numFaces++;
     total_weight += face_weight;
-    logsum += log(C_parameter/face_weight);
+    logsum -= log(face_weight); // += log(1/face_weight);
     //std::cout << "\t";
 }
 void traversal_visitor::end_traversal() {
     //std::cout << "Total Weight: " << total_weight;
     //std::cout << std::endl;
 }
-/*
-template < typename Vertex >
-void traversal_visitor::next_vertex(Vertex v) {}
-
-
-template < typename Edge >
-void traversal_visitor::next_edge(Edge e) {
-    std::cout << e << " ";
-    std::cout << graph[e].etype << " ";
-}
- */
 
 void set_face_data(Graph& g, planar_embedding_storage_t& emb, traversal_visitor& outvis){
     boost::planar_face_traversal(g, &emb[0], outvis, get(&EdgeProperty::id, g));
