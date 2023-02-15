@@ -370,7 +370,9 @@ void exact(Simulation* sim){
             else if (state == s1 || state == s01 || state == s10 || state == s11){numStapleCopies++;}
             else if (state == s12){numStapleCopies+=2;}
             else{std::cout << "state not recognised!" << std::endl;}
-            design->change_state(pool->staples.begin()+stIdx,state);
+            ST staple = pool->staples.begin()+stIdx;
+            staple->initialise_state(state);
+            //design->change_state(pool->staples.begin()+stIdx,state);
             stIdx++;
         }
         MyGraph mygraph(design);
@@ -407,6 +409,69 @@ void exact(Simulation* sim){
         i++;
     }
     std::cout << all_states.size() << std::endl;
+    outfile.close();
+}
+
+void Er2_legacy(Simulation* sim){
+    ofstream outfile;
+    open_trunc(outfile,"Er2.csv","");
+
+    Design *design = sim->design;
+    StaplePool *pool = &(design->staple_pools[0]);
+
+    for (auto &staple : pool->staples){
+        outfile << "state" << staple.id << ",";
+    }
+    outfile << "Er2" << "," << "numfaces" << "," << "numbounddxpairs" << std::endl;
+
+
+    vector<vector<State_t>> to_prod;
+    for (auto &staple : pool->staples){
+        if (staple.num_domains==1) {
+            std::vector<State_t> possible_states = {s0,s1};
+            to_prod.push_back(possible_states);
+        }
+        else if (staple.num_domains==2) {
+            std::vector<State_t> possible_states = {s00,s10,s01,s11,s12};
+            to_prod.push_back(possible_states);
+        }
+        else{
+            std::cout << "Staple with more than 2 domains not supported.";
+        }
+    }
+    vector<vector<State_t>> all_states = cartesian(to_prod);
+    std::cout << all_states.size() << std::endl;
+
+
+    int i = 0;
+    double Wshape;
+    int numBoundDomains, numStack, numStapleCopies;
+    for (auto &pstate : all_states){
+        if (i%10000==0) { std::cout << i << std::endl; }
+        int stIdx = 0;
+
+        for (auto &state : pstate){
+            if (state == s0 || state == s1) {outfile << state << ",";}
+            else if (state == s00) {outfile << "\"(0, 0)\"" << ",";}
+            else if (state == s10) {outfile << "\"(1, 0)\"" << ",";}
+            else if (state == s01) {outfile << "\"(0, 1)\"" << ",";}
+            else if (state == s11) {outfile << "\"(1, 1)\"" << ",";}
+            else if (state == s12) {outfile << "\"(1, 2)\"" << ",";}
+            else{std::cout << "state not recognised!" << std::endl;}
+
+            ST staple = pool->staples.begin()+stIdx;
+            staple->initialise_state(state);
+            //design->change_state(pool->staples.begin()+stIdx,state);
+            stIdx++;
+        }
+        MyGraph mygraph(design);
+        //logsumC = mygraph.faces_weight();
+        Wshape = mygraph.faces_weight();
+        outfile << Wshape << "," << mygraph.numFaces << "," << 0 << std::endl;
+        if (i<100) std::cout << pstate << "\t" << mygraph.numFaces << "\t" << mygraph.embedding_storage << std::endl;
+
+        i++;
+    }
     outfile.close();
 }
 
@@ -559,6 +624,7 @@ int main(int argc, char * argv[]) {
     else if (inputs->exact){
         //double Tm = calculate_Tm(sim);
         exact(sim);
+        //Er2_legacy(sim);
         sim->ofiles->close_files();
     }
     else if (inputs->config_generator){
