@@ -70,14 +70,14 @@ public:
     bool recalc_stack;
     bool recalc_shape;
 	
-    double dG;
-	double dG_duplex;
-	double dG_stack;
-	double dG_shape;
-	double rate;
-	double rate_w;
-    double tau; //duplicate of trManager tau.
-    double k_BM;
+    double dG = 0;
+	double dG_duplex = 0;
+	double dG_stack = 0;
+	double dG_shape = 0;
+	double rate = 0;
+	double rate_w = 0;
+    double tau = 0; //duplicate of trManager tau.
+    double k_BM = 0;
     
 	void decide_possible();
 	void apply(MyGraph*, bool pseudo = false);

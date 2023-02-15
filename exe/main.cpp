@@ -436,9 +436,7 @@ void set_duplex_values(const vector<State_t> &pstate, const StaplePool* pool,
     H_stack = numStack * nParam * dH_average;
     S_stack = numStack * nParam * dS_average;
 }
-
-
-void calculate_Tm(Simulation* sim){
+double calculate_Tm(Simulation* sim){
     //ofstream outfile;
     //open_trunc(outfile,"Exact.csv","");
 
@@ -497,7 +495,8 @@ void calculate_Tm(Simulation* sim){
     std::cout << std::endl;
 
     std::cout << centigrade(Tm) << std::endl;
-    //outfile.close();
+
+    return Tm;
 }
 
 int main(int argc, char * argv[]) {
@@ -529,11 +528,11 @@ int main(int argc, char * argv[]) {
         //G->print_embedding();
 
         //test_loops(constants,G,design);
-        //test_full(sim);
-        test_random();
+        test_full(sim);
+        //test_random();
     }
     else if (inputs->exact){
-        //calculate_Tm(sim);
+        //double Tm = calculate_Tm(sim);
         exact(sim);
         sim->ofiles->close_files();
     }
