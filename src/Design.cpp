@@ -616,8 +616,8 @@ void Design::initialise_obj_states(){
                 if (stoi(dom_i[dom->id]) == 1) dom->state = true;
             }
             for (auto cr = pool->crossovers.begin(); cr!= pool->crossovers.end(); ++cr){
-                cr->state = false;;
-                if (stoi(cr_i[cr->id]) == 1) cr->state = true;;
+                cr->state = false;
+                if (stoi(cr_i[cr->id]) == 1) cr->state = true;
             }
         }
         for (auto dom = domains.begin(); dom!= domains.end(); ++dom){
