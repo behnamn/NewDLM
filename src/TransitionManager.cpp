@@ -270,53 +270,7 @@ void TransitionManager::set_dG_stack(TR& tr) {
             }
         }
     }
-    /*
-    if (tr->type == normal){
-        for (auto stack = tr->domain->stack_domains.begin(); stack != tr->domain->stack_domains.end(); ++stack){
-            if( (*stack)->state){
-                if (tr->check_seam_stack && (*stack)->is_seam){
-                    //cout << "Seam Stack in s12" << endl;
-                    continue;
-                }
-                else{
-                    tr->dG_stack += constants->n_parameter * (dH_average - ramp->get_T()*dS_average);
-                }
-            }
-        }
-    }
-    else if (tr->type == invasion){
-        for (auto stack = tr->domain->stack_domains.begin(); stack != tr->domain->stack_domains.end(); ++stack){
-            if( (*stack)->state == true){
-                if (tr->check_seam_stack == true && (*stack)->is_seam == true){
-                    continue;
-                }
-                else{
-                    tr->dG_stack += constants->n_parameter * (dH_average - ramp->get_T()*dS_average);
-                }
-            }
-        }
-        for (auto stack = tr->affected_domain->stack_domains.begin(); stack != tr->affected_domain->stack_domains.end(); ++stack){
-            if( (*stack)->state == true){
-                if (tr->check_affected_seam_stack == true && (*stack)->is_seam == true){
-                    continue;
-                }
-                else{
-                    tr->dG_stack -= constants->n_parameter * (dH_average - ramp->get_T()*dS_average);
-                }
-            }
-        }
-    }
-    */
     else {printf ("Error! TransitionManager::set_dG_stack(): transition type not recognised!\n"); exit (EXIT_FAILURE);}
-    //if (tr->check_seam_stack == true){
-        //cout << step << "\t" << "Seam Stack" << "\t" << tr->initial_state << "\t" << tr->dG_stack << endl;
-    //}
-    //else{
-        //cout << step << "\t" << "Not seam Stack" << "\t" << tr->initial_state << "\t" << tr->dG_stack << endl;
-    //}
-    //tr->dG_stack = constants->n_parameter * (dH_average - ramp->get_T()*dS_average);
-    //if (tr->check_seam_stack == true) cout << tr->dG_stack << endl;
-
 }
 
 void TransitionManager::set_dG_shape(TR& tr, bool based_on_affected) {

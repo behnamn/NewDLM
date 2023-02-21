@@ -13,6 +13,9 @@
 #include "Helix.h"
 #include "Scaffold.h"
 
+bool formsCrossover(PDOM a, PDOM b, State_t state);
+bool neitherFormCrossover(PDOM a, PDOM b, State_t sA, State_t sB);
+
 class StaplePool {
 public:
     StaplePool();
@@ -42,6 +45,7 @@ public:
     void add_crosspairs();
     void split_helices();
     void add_stacks();
+    void add_state_stacks();
     void add_possible_states();
     void add_sequences();
     void add_concentrations();
@@ -68,6 +72,7 @@ public:
     vector<string> crosspair_poss_state_names;
     vector<string> staple_poss_state_names;
     vector<string> helix_poss_state_names;
+
 
 };
 

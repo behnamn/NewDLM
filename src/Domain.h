@@ -92,6 +92,9 @@ public:
     
     vector<int> stack_ids;
     vector<vector<PoolDomain>::iterator> stack_domains;
+
+    //std::map<State_t, std::vector<int>> stackIdxs;
+    //std::map<State_t, std::vector<PDOM>> stackDomains;
     
     vector<int> children_ids;
     vector<SDOM> children;

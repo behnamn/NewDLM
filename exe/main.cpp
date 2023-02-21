@@ -4,18 +4,7 @@
 #include "../src/TempRamp.h"
 #include "../src/Simulation.h"
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
-{
-    os << "[";
-    for (int i = 0; i < v.size(); ++i) {
-        os << v[i];
-        if (i != v.size() - 1)
-            os << " ";
-    }
-    os << "]";
-    return os;
-}
+
 vector<vector<State_t>> cartesian( vector<vector<State_t> >& v ) {
     vector<vector<State_t>> result;
     auto product = []( long long a, vector<State_t>& b ) { return a*b.size(); };
@@ -633,7 +622,7 @@ int main(int argc, char * argv[]) {
         //test_full(sim);
         //double Tm = calculate_Tm(sim);
         //test_random();
-        test_ramp();
+        //test_ramp();
     }
     else if (inputs->exact){
         //double Tm = calculate_Tm(sim);
