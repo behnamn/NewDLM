@@ -8,6 +8,7 @@
 #ifndef TEMPRAMP_H_
 #define TEMPRAMP_H_
 
+#include <ostream>
 #include "Input.h"
 
 
@@ -24,24 +25,8 @@ public:
     vector<int> num_tr; //for normal and exchange.
     pair<double,double> t_limits;
 };
-class TempJump{
-public:
-    TempJump(){}
-    TempJump(double, int);
-    double dt;
-    int max_idx;
-    
-    bool was_changed;
-    int idx_0;
-    double backward_remainder;
-    int idx_f;
-    double forward_remainder;
-    
-    void update(const int&,
-                const int&,
-                const double&,
-                const double&);
-};
+
+
 
 class TempRamp{
 private:
@@ -50,6 +35,8 @@ private:
     double T_low;   // Kelvin
     double dT;      // Kelvin
     double cool_rate; // Seconds/K
+
+
 public:
     TempRamp();
     TempRamp(Inputs*);
@@ -60,19 +47,23 @@ public:
     bool anneal;
     bool melt;
     bool isothermal;
-    
+
     double dt; // Seconds
-    
+
     double t_max; // seconds
     double current_t;   // Seconds
     double previous_t;
-    //bool T_was_changed;
-    TempJump T_jump;
+
+    //TempJump T_jump;
+    bool T_was_changed;
     
     vector<T_Window> Temps;
     int prev_idx;
     int idx;
-    
+
+    friend ostream &operator<<(ostream &os, const TempRamp &ramp);
+
+    void correct_overflow(double &tau);
     void initialise();
     void move_time(const double&);
     double get_T();

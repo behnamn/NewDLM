@@ -20,7 +20,7 @@ opManager(opManager_){
 }
 
 void Simulation::out_AM(){
-    if (ramp->T_jump.was_changed){
+    if (ramp->T_was_changed){
         cout << ramp->Temps[ramp->prev_idx].str_T << "\t";
         cout << ramp->Temps[ramp->prev_idx].num_tr[0] << "\t";
         cout << ramp->Temps[ramp->prev_idx].num_rejected << "\t";
@@ -123,19 +123,12 @@ void Simulation::run(){
 			trManager->fill_rates();
 			trManager->select_transition(uni);
             trManager->write_transition();
-            /*
-            if (trManager->step > 10){
-                break;
-            }
-            */
             ramp->move_time(trManager->tau);
             statManager->update_times();
             statManager->update_counts();
             trManager->apply_next();
             statManager->write_all();
-            //if (trManager->step % inputs->write_hist_every == 0 && trManager->step > 0){
-                //statManager->write_all_hist();
-            //}
+
             this->out_AM();
             if (inputs->make_movie){
                 this->write_movie();
@@ -153,7 +146,7 @@ void Simulation::run(){
         if (inputs->umbrella_sampling && inputs->initialise_as == "random") this->prepare_config();
         while (trManager->step < inputs->max_steps && ramp->current_t < ramp->t_max) {
             if (!design->target_reached){
-                if (design->staple_pools[inputs->target_pool].OPs[5].state == design->staple_pools[inputs->target_pool].crossovers.size()){
+                if (design->staple_pools[inputs->target_pool].OPs[5].state == design->staple_pools[inputs->target_pool].num_crossovers){
                     design->target_reached = true;
                     design->target_reached_at.first = trManager->step;
                     design->target_reached_at.second = ramp->current_t;
@@ -162,23 +155,22 @@ void Simulation::run(){
             }
 			trManager->fill_rates();
             if (inputs->umbrella_sampling)  opManager->fill_rates_w();
-            //trManager->print_possibles();
 			trManager->select_transition(uni);
             trManager->write_transition();
             statManager->write_all();
             ramp->move_time(trManager->tau);
             statManager->update_times();
             statManager->update_counts();
-            opManager->update_times();
-            if (trManager->step == inputs->burn_steps)
-                opManager->write_burn();
-            if ((trManager->step % inputs->write_hist_every == 0 && trManager->step > 0)
-                || trManager->step == design->target_reached_at.first){
-                ofiles->retrunc_hist_files();
-                //opManager->write();
-                opManager->write_last();
-                statManager->write_all_hist();
-            }
+                opManager->update_times();
+                if (trManager->step == inputs->burn_steps)
+                    opManager->write_burn();
+                if ((trManager->step % inputs->write_hist_every == 0 && trManager->step > 0)
+                    || trManager->step == design->target_reached_at.first){
+                    ofiles->retrunc_hist_files();
+                    opManager->write();
+                    opManager->write_last();
+                    opManager->write_object_hist();
+                }
             trManager->apply_next();
             opManager->set_values();
             trManager->append_trajectory();
@@ -190,10 +182,11 @@ void Simulation::run(){
                 break;
             }
 		}
+        statManager->write_all();
         ofiles->info_file << "N_transitions: " << trManager->step << "\n";
         ofiles->retrunc_hist_files();
         opManager->write_last();
-        statManager->write_all_hist();
+        opManager->write_object_hist();
         statManager->write_in_times();
         cout << "------ Ending Iso Simulation ------\n";
 	}
@@ -213,7 +206,7 @@ void Simulation::run(){
         cout << "------ Ending Config Generator ------\n";
     }
     else{
-        printf ("Please select anneal, melt or isothermal to fill ramp. \n");
+        printf ("Please select anneal, melt or isothermal. \n");
         exit (EXIT_FAILURE);
     }
     ofiles->close_files();

@@ -97,7 +97,7 @@ void TransitionManager::initialise_transitions(){
         }
     }
     // Note: done in a way such that staple always binds and affected_staple always unbinds.
-    // So no duplicates exist!
+    // So no duplicates exist.
 }
 
 void TransitionManager::initialise_reverse_transitions(){
@@ -501,19 +501,20 @@ void TransitionManager::select_transition(Uni& uni){
 	}
     if (inputs->umbrella_sampling){
         tau = (1./total_rate_w)*log(1./r1);
-        //tau = (1./total_rate)*log(1./r1);
     }
     else{
         tau = (1./total_rate)*log(1./r1);
     }
+    ramp->correct_overflow(tau);
     next->tau = this->tau;
 }
 
-void TransitionManager::apply_next(){
-    next->apply(G);
-	step++;
-    G->fill_components();
-    //if(!local && !global2) G->update_faces();
+void TransitionManager::apply_next() {
+    if (!ramp->T_was_changed) {
+        next->apply(G);
+        G->fill_components();
+    }
+    step++;
 }
 
 void TransitionManager::append_trajectory(){

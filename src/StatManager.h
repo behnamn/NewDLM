@@ -13,25 +13,10 @@
 
 template <class T>
 void fill_times(vector<T>& container,
-                const TempJump& T_jump,
+                const int& idx,
                 const double& tau){
-    if (T_jump.was_changed){
-        for (auto it = container.begin(); it!= container.end(); ++it){
-            it->stats[T_jump.idx_0].time[it->state] += T_jump.backward_remainder;
-            if ((T_jump.idx_f - T_jump.idx_0) > 1){
-                for (int idx = T_jump.idx_0+1; idx < T_jump.idx_f; idx++){
-                    if(idx < T_jump.max_idx)
-                        it->stats[idx].time[it->state] += T_jump.dt;
-                }
-            }
-            if(T_jump.idx_f < T_jump.max_idx)
-                it->stats[T_jump.idx_f].time[it->state] += T_jump.forward_remainder;
-        }
-    }
-    else{
-        for (auto it = container.begin(); it!= container.end(); ++it){
-            it->stats[T_jump.idx_0].time[it->state] += tau;
-        }
+    for (auto it = container.begin(); it!= container.end(); ++it){
+        it->stats[idx].time[it->state] += tau;
     }
 }
 
@@ -74,38 +59,7 @@ void write_obj_stat(ofstream& myfile,
     myfile << std::flush;
 }
 
-template <class obj, class state_t>
-void write_obj_hist(ofstream& myfile,
-                    const int& Ti,
-                    vector<obj>& container,
-                    const vector<string>& poss_state_names,
-                    const vector<state_t>& poss_states){
-    myfile << "id" << "\t";
-    for (auto state_name = poss_state_names.begin(); state_name!= poss_state_names.end(); ++state_name){
-        myfile << "t_" << *state_name << "\t";
-    }
-    for (auto state_name = poss_state_names.begin(); state_name!= poss_state_names.end(); ++state_name){
-        myfile << "c_" << *state_name << "\t";
-    }
-    for (int i = 0; i < Tr_MAX; i++){
-        myfile << "n_tr" << i << "\t";
-    }
-    myfile << "\n";
-    for (auto it= container.begin(); it!= container.end(); ++it){
-        myfile << it->id << "\t";
-        for (auto state = poss_states.begin(); state!= poss_states.end(); ++state){
-            myfile << it->stats[Ti].time[*state] << "\t";
-        }
-        for (auto state = poss_states.begin(); state!= poss_states.end(); ++state){
-            myfile << it->stats[Ti].count[*state] << "\t";
-        }
-        for (auto ntr = it->stats[Ti].n_tr.begin(); ntr!= it->stats[Ti].n_tr.end(); ntr++){
-            myfile << *ntr << "\t";
-        }
-        myfile << "\n";
-    }
-    myfile << std::flush;
-}
+
 
 template <class Object>
 void check_entrance(vector<Object>& container,
@@ -175,15 +129,11 @@ public:
     TransitionManager* trManager;
 
     void setup();
-    void initialise();
     void update_times();
     void update_counts();
     
     void write_op_stats();
     void write_object_stats();
-
-    //void write_op_hist();
-    void write_object_hist();
 
     string str;
     
@@ -191,15 +141,14 @@ public:
     bool dummy;
     
     void write_all();
-    void write_all_hist();
-    
+
     void write_in_times();
     
     int target_num_done;
     int num_done = 0;
     bool all_in_times_done = false;
     
-    
+
     
     void print();
     

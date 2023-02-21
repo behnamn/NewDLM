@@ -588,6 +588,19 @@ double calculate_Tm(Simulation* sim){
     return Tm;
 }
 
+void test_ramp(){
+    Inputs *inputs = new Inputs();
+    inputs->sim_type = "anneal";
+    inputs->anneal = true;
+    inputs->isothermal = inputs->exact = false;
+    TempRamp *ramp = new TempRamp(inputs);
+
+
+    std::cout << *ramp << std::endl;
+    std::cout << ramp->T_was_changed << std::endl;
+    ramp->print();
+}
+
 int main(int argc, char * argv[]) {
     Inputs *inputs = new Inputs(argc,argv);
     Constants *constants = new Constants(inputs);
@@ -618,8 +631,9 @@ int main(int argc, char * argv[]) {
 
         //test_loops(constants,G,design);
         //test_full(sim);
-        double Tm = calculate_Tm(sim);
+        //double Tm = calculate_Tm(sim);
         //test_random();
+        test_ramp();
     }
     else if (inputs->exact){
         //double Tm = calculate_Tm(sim);

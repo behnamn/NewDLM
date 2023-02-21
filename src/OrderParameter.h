@@ -45,6 +45,33 @@ public:
     vector<Stat<int>> stats;
 };
 
+class OrderParameter2D{
+public:
+    OrderParameter2D(){}
+    OrderParameter2D(OrderParameter*, OrderParameter*);
+    virtual ~OrderParameter2D(){}
+
+    OrderParameter* OP1;
+    OrderParameter* OP2;
+
+    string name;
+
+    pair<int,int> prev_state;
+    pair<int,int> state;
+    pair<int,int> fut_state;
+
+    std::set<pair<int,int> > explored_vals;
+    std::map<pair<int,int>, int> count;
+    std::map<pair<int,int>, double> time;
+    std::map<pair<int,int>, double> weight;
+
+    void set_new_value();
+    void update(const double);
+
+    void print();
+
+    void write();
+};
 
 
  

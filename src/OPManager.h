@@ -13,34 +13,39 @@
 #include "StatManager.h"
 //#include "OrderParameter.h"
 
-class OrderParameter2D{
-public:
-    OrderParameter2D(){}
-    OrderParameter2D(OrderParameter*, OrderParameter*);
-    virtual ~OrderParameter2D(){}
-    
-    OrderParameter* OP1;
-    OrderParameter* OP2;
-    
-    string name;
-    
-    pair<int,int> prev_state;
-    pair<int,int> state;
-    pair<int,int> fut_state;
-    
-    std::set<pair<int,int> > explored_vals;
-    std::map<pair<int,int>, int> count;
-    std::map<pair<int,int>, double> time;
-    std::map<pair<int,int>, double> weight;
-    
-    void set_new_value();
-    void update(const double);
-    
-    void print();
-    
-    void write();
-};
 
+template <class obj, class state_t>
+void write_obj_hist(ofstream& myfile,
+                    const int& Ti,
+                    vector<obj>& container,
+                    const vector<string>& poss_state_names,
+                    const vector<state_t>& poss_states){
+    myfile << "id" << "\t";
+    for (auto state_name = poss_state_names.begin(); state_name!= poss_state_names.end(); ++state_name){
+        myfile << "t_" << *state_name << "\t";
+    }
+    for (auto state_name = poss_state_names.begin(); state_name!= poss_state_names.end(); ++state_name){
+        myfile << "c_" << *state_name << "\t";
+    }
+    for (int i = 0; i < Tr_MAX; i++){
+        myfile << "n_tr" << i << "\t";
+    }
+    myfile << "\n";
+    for (auto it= container.begin(); it!= container.end(); ++it){
+        myfile << it->id << "\t";
+        for (auto state = poss_states.begin(); state!= poss_states.end(); ++state){
+            myfile << it->stats[Ti].time[*state] << "\t";
+        }
+        for (auto state = poss_states.begin(); state!= poss_states.end(); ++state){
+            myfile << it->stats[Ti].count[*state] << "\t";
+        }
+        for (auto ntr = it->stats[Ti].n_tr.begin(); ntr!= it->stats[Ti].n_tr.end(); ntr++){
+            myfile << *ntr << "\t";
+        }
+        myfile << "\n";
+    }
+    myfile << std::flush;
+}
 
 class OPManager{
 public:
@@ -76,6 +81,8 @@ public:
     void write();
     void write_last();
     void write_burn();
+
+    void write_object_hist();
     
     void set_future_value(const TR& tr);
     void fill_rates_w();

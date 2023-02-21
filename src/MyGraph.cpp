@@ -519,9 +519,9 @@ void MyGraph::print_edges(){
         cout << *ei << "\t";
         //cout << "Type: " << g[*ei].type << "\t";
         //cout << "Edge Length: " << g[*ei].length << "\t";
-        if(g[*ei].domain_s.second == true)
+        if(g[*ei].domain_s.second)
             cout << "Domain Length: " << g[*ei].domain_s.first->length << "\t";
-        if(g[*ei].crossover.second == true)
+        if(g[*ei].crossover.second)
             cout << "Crossover Length: " << g[*ei].crossover.first->length << "\t";
         cout << "\n";
     }

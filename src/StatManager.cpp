@@ -73,48 +73,6 @@ void StatManager::setup(){
         }
     }
 }
-void StatManager::initialise(){
-    int idx = 0;
-    for (auto& op : design->OPs){
-        op.stats[idx].update(op.state);
-        op.stats[idx].count[op.state]++;
-    }
-    for (auto& obj : design->domains){
-        obj.stats[idx].count[obj.state]++;
-    }
-    for(auto& pool : design->staple_pools){
-        for (auto& obj : pool.OPs){
-            obj.stats[idx].count[obj.state]++;
-        }
-        for (auto& obj : pool.domains){
-            obj.stats[idx].count[obj.state]++;
-        }
-        for (auto& obj : pool.crossovers){
-            obj.stats[idx].count[obj.state]++;
-        }
-        for (auto& obj : pool.crosspairs){
-            obj.stats[idx].count[obj.state]++;
-        }
-        for (auto& obj : pool.staples){
-            obj.stats[idx].count[obj.state]++;
-        }
-        for (auto& obj : pool.helices){
-            obj.stats[idx].count[obj.state]++;
-        }
-    }
-    if (inputs->track_clusters){
-        for (auto& op : G->cg.OPs){
-            op.stats[idx].update(op.state);
-            op.stats[idx].count[op.state]++;
-        }
-        for (auto& cg : G->p_cg){
-            for (auto op : cg.OPs){
-                op.stats[idx].update(op.state);
-                op.stats[idx].count[op.state]++;
-            }
-        }
-    }
-}
 
 void StatManager::update_counts(){
     int T = ramp->prev_idx; //State has not changed yet.
@@ -203,23 +161,25 @@ void StatManager::update_counts(){
     }
 }
 void StatManager::update_times(){
-    fill_times<OrderParameter> (design->OPs,ramp->T_jump,trManager->next->tau);
-    fill_times<SubDomain> (design->domains,ramp->T_jump,trManager->next->tau);
+    int idx;
+    idx = ramp->prev_idx;
+    fill_times<OrderParameter> (design->OPs,idx,trManager->next->tau);
+    fill_times<SubDomain> (design->domains,idx,trManager->next->tau);
     for(auto pool = design->staple_pools.begin(); pool!= design->staple_pools.end(); ++pool){
-        fill_times<OrderParameter> (pool->OPs,ramp->T_jump,trManager->next->tau);
-        fill_times<PoolDomain> (pool->domains,ramp->T_jump,trManager->next->tau);
-        fill_times<Crossover> (pool->crossovers,ramp->T_jump,trManager->next->tau);
-        fill_times<CrossPair> (pool->crosspairs,ramp->T_jump,trManager->next->tau);
-        fill_times<Staple> (pool->staples,ramp->T_jump,trManager->next->tau);
-        fill_times<Helix> (pool->helices,ramp->T_jump,trManager->next->tau);
+        fill_times<OrderParameter> (pool->OPs,idx,trManager->next->tau);
+        fill_times<PoolDomain> (pool->domains,idx,trManager->next->tau);
+        fill_times<Crossover> (pool->crossovers,idx,trManager->next->tau);
+        fill_times<CrossPair> (pool->crosspairs,idx,trManager->next->tau);
+        fill_times<Staple> (pool->staples,idx,trManager->next->tau);
+        fill_times<Helix> (pool->helices,idx,trManager->next->tau);
     }
     if (inputs->track_clusters){
-        fill_times<OrderParameter> (G->cg.OPs,ramp->T_jump,trManager->next->tau);
+        fill_times<OrderParameter> (G->cg.OPs,idx,trManager->next->tau);
         for (auto cg = G->p_cg.begin(); cg!= G->p_cg.end(); ++cg){
-            fill_times<OrderParameter> (cg->OPs,ramp->T_jump,trManager->next->tau);
+            fill_times<OrderParameter> (cg->OPs,idx,trManager->next->tau);
         }
     }
-    int idx; double time;
+    double time;
     if (inputs->isothermal){
         idx = ramp->idx;
         time = ramp->current_t;
@@ -352,18 +312,6 @@ void StatManager::write_object_stats(){
     }
 }
 
-void StatManager::write_object_hist(){
-    int Ti = ramp->prev_idx;
-    write_obj_hist(ofiles->sdom_hist_file, Ti, design->domains, design->sdom_poss_state_names, design->sdom_poss_states);
-    for (auto pool= design->staple_pools.begin(); pool!= design->staple_pools.end(); ++pool){
-        write_obj_hist(ofiles->pdom_hist_files[pool->id], Ti, pool->domains, pool->pdom_poss_state_names, pool->pdom_poss_states);
-        write_obj_hist(ofiles->cr_hist_files[pool->id], Ti, pool->crossovers, pool->cross_poss_state_names, pool->cross_poss_states);
-        write_obj_hist(ofiles->crp_hist_files[pool->id], Ti, pool->crosspairs, pool->crosspair_poss_state_names, pool->cross_poss_states);
-        write_obj_hist(ofiles->st_hist_files[pool->id], Ti, pool->staples, pool->staple_poss_state_names, pool->staple_poss_states);
-        write_obj_hist(ofiles->hlx_hist_files[pool->id], Ti, pool->helices, pool->helix_poss_state_names, pool->helix_poss_states);
-    }
-}
-
 void StatManager::write_all(){
     dummy = false;
     if (inputs->isothermal){
@@ -374,19 +322,12 @@ void StatManager::write_all(){
         }
         if (trManager->step % inputs->write_stat_every == 0) dummy = true;
     }
-    else {if (ramp->T_jump.was_changed) dummy = true;}
+    else {if (ramp->T_was_changed) dummy = true;}
     
     this->write_op_stats();
-    
-    //if (inputs->isothermal) this->write_in_times();
-    //else this->write_object_stats();
-    
     if (!inputs->isothermal) this->write_object_stats();
-    
+
     this->headers_written = true;
-}
-void StatManager::write_all_hist(){
-    if (inputs->isothermal) this->write_object_hist();
 }
 
 void StatManager::write_in_times(){

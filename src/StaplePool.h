@@ -55,7 +55,7 @@ public:
     void print_OPs();
     void print();
     
-    vector<OrderParameter> OPs; //index is the index of temperate in TempRamp::unique_Ts
+    vector<OrderParameter> OPs;
     
     vector<bool> pdom_poss_states;
     vector<bool> cross_poss_states;
@@ -68,7 +68,6 @@ public:
     vector<string> crosspair_poss_state_names;
     vector<string> staple_poss_state_names;
     vector<string> helix_poss_state_names;
-
 
 };
 

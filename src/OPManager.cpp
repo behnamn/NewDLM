@@ -8,25 +8,6 @@
 
 #include "OPManager.h"
 
-OrderParameter2D::OrderParameter2D(OrderParameter* OP1_, OrderParameter* OP2_) : OP1(OP1_) , OP2(OP2_){
-    this->name = OP1->name;
-    this->name+= "-";
-    this->name+= OP2->name;
-    state.first = OP1->state;
-    state.second = OP2->state;
-}
-void OrderParameter2D::set_new_value(){
-    prev_state = state;
-    state.first = OP1->state;
-    state.second = OP2->state;
-}
-void OrderParameter2D::update(const double tau){
-    count[state]++;
-    time[state]+= tau;
-}
-
-
-
 
 OPManager::OPManager(StatManager* statManager_): statManager(statManager_){
     inputs = statManager->inputs;
@@ -235,7 +216,6 @@ void OPManager::set_future_value(const TR& tr){
         }
     }
 }
-
 void OPManager::fill_rates_w(){
     trManager->total_rate_w = 0.;
     for (auto tr = trManager->transitions.begin(); tr!= trManager->transitions.end(); ++tr){
@@ -302,7 +282,6 @@ void OPManager::write_last(){
         i++;
     }
 }
-
 void OPManager::write_burn(){
     ofiles->burn_file << "Val\t";
     for (auto op = this->OPs.begin(); op!= this->OPs.end(); ++op){
@@ -352,6 +331,18 @@ void OPManager::write_burn(){
         }
         burn_2D[i].close();
         i++;
+    }
+}
+
+void OPManager::write_object_hist(){
+    int Ti = ramp->prev_idx;
+    write_obj_hist(ofiles->sdom_hist_file, Ti, design->domains, design->sdom_poss_state_names, design->sdom_poss_states);
+    for (auto pool= design->staple_pools.begin(); pool!= design->staple_pools.end(); ++pool){
+        write_obj_hist(ofiles->pdom_hist_files[pool->id], Ti, pool->domains, pool->pdom_poss_state_names, pool->pdom_poss_states);
+        write_obj_hist(ofiles->cr_hist_files[pool->id], Ti, pool->crossovers, pool->cross_poss_state_names, pool->cross_poss_states);
+        write_obj_hist(ofiles->crp_hist_files[pool->id], Ti, pool->crosspairs, pool->crosspair_poss_state_names, pool->cross_poss_states);
+        write_obj_hist(ofiles->st_hist_files[pool->id], Ti, pool->staples, pool->staple_poss_state_names, pool->staple_poss_states);
+        write_obj_hist(ofiles->hlx_hist_files[pool->id], Ti, pool->helices, pool->helix_poss_state_names, pool->helix_poss_states);
     }
 }
 
