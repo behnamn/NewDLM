@@ -35,7 +35,7 @@ void write_obj_stat_headers(ofstream& myfile,
         }
     }
     myfile << "\n";
-    myfile << std::flush;
+    //myfile << std::flush;
 }
 template <class obj>
 void write_obj_stat(ofstream& myfile,
@@ -56,7 +56,7 @@ void write_obj_stat(ofstream& myfile,
         }
     }
     myfile << "\n";
-    myfile << std::flush;
+    //myfile << std::flush;
 }
 
 

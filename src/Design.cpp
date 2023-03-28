@@ -425,6 +425,14 @@ void Design::add_OPs(){
             OP.group_ids.insert(pdom->id);
         }
         pool->OPs.push_back(OP);
+        if (pool->crossovers.size() > 0){
+            name = "AllCrossovers_"; name+= pool->name;
+            OP = OrderParameter(pool->id,BOUND_CROSSOVERS,name);
+            for (auto cross = pool->crossovers.begin(); cross!= pool->crossovers.end(); ++cross){
+                OP.group_ids.insert(cross->id);
+            }
+            pool->OPs.push_back(OP);
+        }
     }
     if (inputs->extra_ops){
         this->read_OPs();

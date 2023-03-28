@@ -483,7 +483,7 @@ void TransitionManager::append_trajectory(){
             }
         }
         ofiles->simple_traj_file << "\n";
-        ofiles->simple_traj_file << std::flush;
+        //ofiles->simple_traj_file << std::flush;
     }
     if (step % inputs->write_state_every == 0){
         ofiles->trajectory_file << "time = " << ramp->current_t << "\n";
@@ -508,7 +508,7 @@ void TransitionManager::append_trajectory(){
             }   ofiles->trajectory_file << "\n";
             ofiles->trajectory_file << "}\n";
         }
-        ofiles->trajectory_file << std::flush;
+        //ofiles->trajectory_file << std::flush;
         retruncate(ofiles->last_conf_file,inputs->last_conf_file_name);
         ofiles->last_conf_file << "time = " << ramp->current_t << "\n";
         ofiles->last_conf_file << "step = " << step << "\n";
@@ -532,7 +532,7 @@ void TransitionManager::append_trajectory(){
             }   ofiles->last_conf_file << "\n";
             ofiles->last_conf_file << "}\n";
         }
-        ofiles->last_conf_file << std::flush;
+        //ofiles->last_conf_file << std::flush;
     }
 }
 void TransitionManager::write_transition(){
@@ -545,7 +545,7 @@ void TransitionManager::write_transition(){
         //transition_file << opManager->OPs["Num_bound_U"].current << "\n";
         ofiles->transition_file << "\n";
         next->write(ofiles->transition_file);
-        ofiles->transition_file << std::flush;
+        //ofiles->transition_file << std::flush;
     }
 }
 

@@ -31,7 +31,7 @@ void Simulation::out_AM(){
     }
 }
 void Simulation::out_Iso(){
-    if (trManager->step % 10000 == 0){
+    if (trManager->step % 100 == 0){
         cout << trManager->step << "\t";
         for (const auto& pool : design->staple_pools){
             cout << pool.OPs[1].state << "\t";
@@ -146,7 +146,7 @@ void Simulation::run(){
         if (inputs->umbrella_sampling && inputs->initialise_as == "random") this->prepare_config();
         while (trManager->step < inputs->max_steps && ramp->current_t < ramp->t_max) {
             if (!design->target_reached){
-                if (design->staple_pools[inputs->target_pool].OPs[5].state == design->staple_pools[inputs->target_pool].num_crossovers){
+                if (design->staple_pools[inputs->target_pool].OPs[2].state == design->staple_pools[inputs->target_pool].num_crossovers){
                     design->target_reached = true;
                     design->target_reached_at.first = trManager->step;
                     design->target_reached_at.second = ramp->current_t;
@@ -157,6 +157,7 @@ void Simulation::run(){
             if (inputs->umbrella_sampling)  opManager->fill_rates_w();
 			trManager->select_transition(uni);
             trManager->write_transition();
+            trManager->append_trajectory();
             statManager->write_all();
             ramp->move_time(trManager->tau);
             statManager->update_times();
@@ -173,16 +174,17 @@ void Simulation::run(){
                 }
             trManager->apply_next();
             opManager->set_values();
-            trManager->append_trajectory();
+
             this->out_Iso();
             if (inputs->make_movie) this->write_movie();
             trManager->reset_possibles();
             trManager->reset_recalculates();
-            if(!inputs->umbrella_sampling && design->target_reached) { cout << "Target Reached!" << endl;
+            if(!inputs->umbrella_sampling && design->target_reached && statManager->all_in_times_done) { cout << "Target Reached!" << endl;
                 break;
             }
 		}
         statManager->write_all();
+        trManager->append_trajectory();
         ofiles->info_file << "N_transitions: " << trManager->step << "\n";
         ofiles->retrunc_hist_files();
         opManager->write_last();

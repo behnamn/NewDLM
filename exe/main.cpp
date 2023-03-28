@@ -349,7 +349,7 @@ void exact(Simulation* sim){
     for (auto &pstate : all_states){
         if (i%10000==0) {
             std::cout << i << std::endl;
-            outfile << std::flush;
+            //outfile << std::flush;
         }
 
         int stIdx = 0;
@@ -603,18 +603,10 @@ int main(int argc, char * argv[]) {
     Simulation *sim = new Simulation(opManager);
     if (inputs->test){
         //do_test();
-        //design->print_domains();
-        //design->print_OPs();
-        //for (auto pool = design->staple_pools.begin(); pool!= design->staple_pools.end(); ++pool){
-        //cout << pool->name << endl;
-        //pool->print_domains();
-        //for (auto st = pool->staples.begin(); st!=pool->staples.end(); ++st){
-        //st->print();
-        //}
-        //pool->print_staples();
-        //pool->print_helices();
-        //pool->print_crossovers();
-        //}
+        design->print_OPs();
+        for (auto &pool : design->staple_pools){
+            pool.print_OPs();
+        }
 
         //G->print_embedding();
 
