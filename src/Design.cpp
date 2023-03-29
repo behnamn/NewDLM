@@ -336,10 +336,6 @@ void Design::calc_subdom_energies(){
     else{
         printf ("Error:\t Specify either average, seq, seqave or custom energies.\n"); exit (EXIT_FAILURE);
     }
-
-    for(auto &domain : this->domains){
-        std::cout << domain.dH << "\t" << domain.dS << std::endl;
-    }
 }
 void Design::add_parents(){
     int n1, n2;
