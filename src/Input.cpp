@@ -34,7 +34,6 @@ Inputs::Inputs (int argc, char * argv[]) {
 	}
 	loadInputFile();
 	loadOptions();
-    if(this->config_generator) this->umbrella_sampling = true;
 }
 Inputs::Inputs () {
     file_name = "input.txt";
@@ -340,6 +339,16 @@ void Inputs::loadOptions(){
         config_generator = false;
         exact = false;
 	}
+    else if (sim_type == "weightgen"){
+        isothermal = true;
+        anneal = false;
+        melt = false;
+        test = false;
+        convert = false;
+        config_generator = false;
+        exact = false;
+        umbrella_sampling = true;
+    }
     else if (sim_type == "test"){
         isothermal = false;
         anneal = false;
@@ -366,6 +375,7 @@ void Inputs::loadOptions(){
         convert = false;
         config_generator = true;
         exact = false;
+        umbrella_sampling = true;
     }
     else if (sim_type == "exact"){
         isothermal = false;

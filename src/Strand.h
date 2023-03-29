@@ -18,7 +18,7 @@ public:
 	int length;
 	
 	string seq;  
-	string reverse_comp; 
+	string reverse_comp;
 	
 	void set_seq(const string&);
 	void set_length();

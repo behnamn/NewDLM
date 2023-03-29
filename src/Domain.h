@@ -18,6 +18,11 @@ public:
 	int id;
     
     int length;
+
+    double dH_ave, dS_ave;
+    double dH_seq, dS_seq;
+    double dH_seqave, dS_seqave;
+
     double dH;
     double dS;
         
@@ -37,6 +42,7 @@ public:
     bool is_body;
 
     string seq;
+
 };
 
 

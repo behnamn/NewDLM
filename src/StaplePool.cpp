@@ -558,7 +558,7 @@ void StaplePool::add_possible_states(){
 
 void StaplePool::add_sequences(){
     //Adding sequences for pool domains and staples
-    if (inputs->domain_energies == "seq"){
+    if (inputs->domain_energies == "seq" || inputs->domain_energies == "seqave"){
         for (auto dom = this->domains.begin(); dom!= this->domains.end(); ++dom){
             if (dom->nucs.second > dom->nucs.first){
                 dom->seq = this->scaffold->seq.substr(dom->nucs.first,dom->length); //all domains except end of scaffold
@@ -609,8 +609,10 @@ void StaplePool::add_energies(){
             dH += dH_termAT;
             dS += dS_termAT;
             dS += (dom->length - 1) * salt_per_phosphate_hack;
-            dom->dH = dH;
-            dom->dS = dS;
+            dom->dH_ave = dH;
+            dom->dS_ave = dS;
+            dom->dH = dom->dH_ave;
+            dom->dS = dom->dS_ave;
         }
     }
     else if (inputs->domain_energies == "seq"){
@@ -648,8 +650,64 @@ void StaplePool::add_energies(){
                 dS += dS_termAT;
             }
             dS+= (dom->length - 1) * salt_per_phosphate_hack;
-            dom->dH = dH;
-            dom->dS = dS;
+            dom->dH_seq = dH;
+            dom->dS_seq = dS;
+            dom->dH = dom->dH_seq;
+            dom->dS = dom->dS_seq;
+        }
+    }
+    else if (inputs->domain_energies == "seqave"){
+        for (auto dom = domains.begin(); dom!=domains.end(); ++dom){
+            dH = 0.;
+            dS = 0.;
+            string sub;
+            for (int i=0; i<dom->length-1; i++){
+                sub.clear();
+                sub += dom->seq[i];
+                sub += dom->seq[i+1];
+                if (sub == "AA" || sub == "TT") { dH+=dH_AA; dS+=dS_AA; }
+                else if (sub == "CA" || sub == "TG") { dH+=dH_CA; dS+=dS_CA; }
+                else if (sub == "GT" || sub == "AC") { dH+=dH_GT; dS+=dS_GT; }
+                else if (sub == "CT" || sub == "AG") { dH+=dH_CT; dS+=dS_CT; }
+                else if (sub == "GA" || sub == "TC") { dH+=dH_GA; dS+=dS_GA; }
+                else if (sub == "GG" || sub == "CC") { dH+=dH_GG; dS+=dS_GG; }
+                else if (sub == "AT") { dH+=dH_AT; dS+=dS_AT; }
+                else if (sub == "TA") { dH+=dH_TA; dS+=dS_TA; }
+                else if (sub == "CG") { dH+=dH_CG; dS+=dS_CG; }
+                else if (sub == "GC") { dH+=dH_GC; dS+=dS_GC; }
+                else {
+                    cout << "Error! dom->seq not in nn database. \n" << dom->seq << "\n";
+                    exit (EXIT_FAILURE);
+                }
+            }
+            dH+= dH_init;
+            dS+= dS_init;
+            if (dom->seq[0] == 'A' || dom->seq[0] == 'T'){
+                dH += dH_termAT;
+                dS += dS_termAT;
+            }
+            if (dom->seq[dom->length-1] == 'A' || dom->seq[dom->length-1] == 'T'){
+                dH += dH_termAT;
+                dS += dS_termAT;
+            }
+            dS+= (dom->length - 1) * salt_per_phosphate_hack;
+            dom->dH_seq = dH;
+            dom->dS_seq = dS;
+        }
+        vector<double> dH_per_bp_seq_list, dS_per_bp_seq_list;
+        for(auto &domain : this->domains){
+            dH_per_bp_seq_list.push_back(domain.dH_seq / domain.length);
+            dS_per_bp_seq_list.push_back(domain.dS_seq / domain.length);
+        }
+        double dH_per_bp_seq = accumulate(dH_per_bp_seq_list.begin(), dH_per_bp_seq_list.end(), 0.0) / dH_per_bp_seq_list.size();
+        double dS_per_bp_seq = accumulate(dS_per_bp_seq_list.begin(), dS_per_bp_seq_list.end(), 0.0) / dS_per_bp_seq_list.size();
+        for(auto &domain : this->domains){
+            domain.dH_seqave = domain.length * dH_per_bp_seq;
+            domain.dS_seqave = domain.length * dS_per_bp_seq;
+        }
+        for (auto dom = domains.begin(); dom!=domains.end(); ++dom){
+            dom->dH = dom->dH_seqave;
+            dom->dS = dom->dS_seqave;
         }
     }
     else if (inputs->domain_energies == "custom"){
@@ -667,7 +725,11 @@ void StaplePool::add_energies(){
         else {printf ("Error:\t Could not read energy file\n"); exit (EXIT_FAILURE);}
     }
     else{
-        printf ("Error:\t Specify either average, seq or custom energies.\n"); exit (EXIT_FAILURE);
+        printf ("Error:\t Specify either average, seq, seqave or custom energies.\n"); exit (EXIT_FAILURE);
+    }
+
+    for(auto &domain : this->domains){
+        std::cout << domain.dH << "\t" << domain.dS << std::endl;
     }
 }
 
