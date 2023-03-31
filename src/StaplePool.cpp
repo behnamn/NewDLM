@@ -696,14 +696,14 @@ void StaplePool::add_energies(){
         }
         vector<double> dH_per_bp_seq_list, dS_per_bp_seq_list;
         for(auto &domain : this->domains){
-            dH_per_bp_seq_list.push_back(domain.dH_seq / domain.length);
-            dS_per_bp_seq_list.push_back(domain.dS_seq / domain.length);
+            dH_per_bp_seq_list.push_back(domain.dH_seq / (domain.length*1.));
+            dS_per_bp_seq_list.push_back(domain.dS_seq / (domain.length*1.));
         }
-        double dH_per_bp_seq = accumulate(dH_per_bp_seq_list.begin(), dH_per_bp_seq_list.end(), 0.0) / dH_per_bp_seq_list.size();
-        double dS_per_bp_seq = accumulate(dS_per_bp_seq_list.begin(), dS_per_bp_seq_list.end(), 0.0) / dS_per_bp_seq_list.size();
+        double dH_per_bp_seq = accumulate(dH_per_bp_seq_list.begin(), dH_per_bp_seq_list.end(), 0.0) / (1.*dH_per_bp_seq_list.size());
+        double dS_per_bp_seq = accumulate(dS_per_bp_seq_list.begin(), dS_per_bp_seq_list.end(), 0.0) / (1.*dS_per_bp_seq_list.size());
         for(auto &domain : this->domains){
-            domain.dH_seqave = domain.length * dH_per_bp_seq;
-            domain.dS_seqave = domain.length * dS_per_bp_seq;
+            domain.dH_seqave = (domain.length*1.) * dH_per_bp_seq;
+            domain.dS_seqave = (domain.length*1.) * dS_per_bp_seq;
         }
         for (auto dom = domains.begin(); dom!=domains.end(); ++dom){
             dom->dH = dom->dH_seqave;

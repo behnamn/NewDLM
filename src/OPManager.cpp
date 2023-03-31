@@ -8,6 +8,87 @@
 
 #include "OPManager.h"
 
+std::map<int,long double> get_new_weights(std::map<int,long double>& w_old, std::map<int,long double>& times){
+    int key;
+    const int Ti = 0;
+    std::map<int,long double> probs;
+    std::map<int,long double> w_new;
+    for (const auto& entry : w_old){
+        key = entry.first;
+        probs[key] = times[key] / (w_old[key] * w_old[key]);
+    }
+    for (const auto &entry : probs) {
+        w_new[entry.first] = std::sqrt(1 / entry.second);
+    }
+    // Find the minimum value of w_new
+    long double min_w_new = std::numeric_limits<long double>::max();
+    for (const auto &entry : w_new) {
+        min_w_new = std::min(min_w_new, entry.second);
+    }
+
+    // Find the maximum value of w_new_dict excluding inf values
+    long double max_w_new = std::numeric_limits<long double>::lowest();
+    for (const auto &entry : w_new) {
+        if (!std::isinf(entry.second)) {
+            max_w_new = std::max(max_w_new, entry.second);
+        }
+    }
+
+    // Find the first and last non-infinite values
+    int first_non_inf_key = -1;
+    int last_non_inf_key = -1;
+    for (const auto& entry : w_new) {
+        if (!std::isinf(entry.second)) {
+            if (first_non_inf_key == -1) {
+                first_non_inf_key = entry.first;
+            }
+            last_non_inf_key = entry.first;
+        }
+    }
+
+    // Iteratively increase the weight based on the distance from the first and last non-infinite values
+    long double increment_first, increment_last;
+    //int min_key = w_new.begin()->first;
+    //int max_key = w_new.rbegin()->first;;
+    //if (first_non_inf_key != max_key)
+    increment_first = w_new[first_non_inf_key] / w_new[first_non_inf_key+1];
+    //if (last_non_inf_key != min_key)
+    increment_last = w_new[last_non_inf_key] / w_new[last_non_inf_key-1];
+
+
+    for (auto& entry : w_new) {
+        if (std::isinf(entry.second)) {
+            int distance_to_first = std::abs(entry.first - first_non_inf_key);
+            int distance_to_last = std::abs(entry.first - last_non_inf_key);
+            int min_distance = std::min(distance_to_first, distance_to_last);
+
+
+            if (entry.first < first_non_inf_key){
+                entry.second = pow(increment_first, distance_to_first) * w_new[first_non_inf_key];
+            }
+            else if (entry.first > last_non_inf_key){
+                entry.second = pow(increment_last, distance_to_last) * w_new[last_non_inf_key];
+            }
+            else{
+                std::cout << "Error: key has to be less than first non-inf key or greater than last non-inf key." << std::endl;
+            }
+        }
+    }
+
+    /*
+    // Change inf values to double the max
+    for (auto &entry : w_new) {
+        if (std::isinf(entry.second)) {
+            entry.second = max_w_new*2.;
+        }
+    }
+     */
+    // Normalize w_new_dict by dividing each value by the minimum value
+    for (auto &entry : w_new) {
+        entry.second /= min_w_new;
+    }
+    return w_new;
+}
 
 OPManager::OPManager(StatManager* statManager_): statManager(statManager_){
     inputs = statManager->inputs;
@@ -18,7 +99,7 @@ OPManager::OPManager(StatManager* statManager_): statManager(statManager_){
     ofiles = statManager->ofiles;
 
     this->initialise();
-    this->read_weights();
+    if (inputs->umbrella_sampling) this->read_weights();
     ofstream a;
     for (const auto& op : this->OPs_2D){
         files_2D.push_back(std::move(a));
@@ -49,67 +130,65 @@ void OPManager::initialise(){
     }
 }
 void OPManager::read_weights(){
-    if (inputs->umbrella_sampling){
-        ifstream myfile;
-        myfile.open(inputs->w_file_name);
-        std::string all;
-        myfile.seekg(0, std::ios::end);
-        all.reserve(myfile.tellg());
-        myfile.seekg(0, std::ios::beg);
-        all.assign((std::istreambuf_iterator<char>(myfile)),std::istreambuf_iterator<char>());
-        vector<std::string> lines;
-        boost::split(lines, all, boost::is_any_of("\n"));
-        vector<string> first_line;
-        boost::split(first_line, lines[0], boost::is_any_of("\t"));
-        for (auto op = this->OPs.begin(); op!= this->OPs.end(); ++op){
-            if ((*op)->name == first_line[0]){
-                (*op)->biased = true;
-                this->biased.first = true;
-                this->biased.second = *op;
-            }
+    ifstream myfile;
+    myfile.open(inputs->w_file_name);
+    std::string all;
+    myfile.seekg(0, std::ios::end);
+    all.reserve(myfile.tellg());
+    myfile.seekg(0, std::ios::beg);
+    all.assign((std::istreambuf_iterator<char>(myfile)),std::istreambuf_iterator<char>());
+    vector<std::string> lines;
+    boost::split(lines, all, boost::is_any_of("\n"));
+    vector<string> first_line;
+    boost::split(first_line, lines[0], boost::is_any_of("\t"));
+    for (auto op = this->OPs.begin(); op!= this->OPs.end(); ++op){
+        if ((*op)->name == first_line[0]){
+            (*op)->biased = true;
+            this->biased.first = true;
+            this->biased.second = *op;
         }
-        for (auto op = this->OPs.begin(); op!= this->OPs.end(); ++op){
-            if ((*op)->name!="BPs" && (*op)->name!="Domains" && (*op)->name!=biased.second->name){
-                OPs_2D.push_back(OrderParameter2D(biased.second, *op));
-            }
+    }
+    for (auto op = this->OPs.begin(); op!= this->OPs.end(); ++op){
+        if ((*op)->name!="BPs" && (*op)->name!="Domains" && (*op)->name!=biased.second->name){
+            OPs_2D.push_back(OrderParameter2D(biased.second, *op));
         }
-        if (inputs->config_generator){
-            int min, max;
-            double weight = 1.;
-            if (biased.second->type == OP_t(BOUND_DOMAINS)){
-                min = 0;
-                max = design->staple_pools[biased.second->pool_id].num_domains;
-            }
-            else if (biased.second->type == OP_t(BOUND_STAPLES)){
-                min = 0;
-                max = design->staple_pools[biased.second->pool_id].num_staples;
-            }
-            else if (biased.second->type == OP_t(BOUND_CROSSOVERS)){
-                min = 0;
-                max = design->staple_pools[biased.second->pool_id].num_crossovers;
-            }
-            else if (biased.second->type == OP_t(BOUND_HELICES)){
-                min = 0;
-                max = design->staple_pools[biased.second->pool_id].num_helices;
-            }
-            else{
-                cout << "Error! OPManager::read_weights(): OP_t not recognised!" << endl;
-                exit (EXIT_FAILURE);
-            }
-            for (int i = 0; i <= max; i++){
-                biased.second->weight[i] = weight;
-                weight = weight * 10.;
-            }
+    }
+    if (inputs->config_generator){
+        int min, max;
+        double weight = 1.;
+        if (biased.second->type == OP_t(BOUND_DOMAINS)){
+            min = 0;
+            max = design->staple_pools[biased.second->pool_id].num_domains;
+        }
+        else if (biased.second->type == OP_t(BOUND_STAPLES)){
+            min = 0;
+            max = design->staple_pools[biased.second->pool_id].num_staples;
+        }
+        else if (biased.second->type == OP_t(BOUND_CROSSOVERS)){
+            min = 0;
+            max = design->staple_pools[biased.second->pool_id].num_crossovers;
+        }
+        else if (biased.second->type == OP_t(BOUND_HELICES)){
+            min = 0;
+            max = design->staple_pools[biased.second->pool_id].num_helices;
         }
         else{
-            vector<string> newline;
-            for (auto line = lines.begin()+1; line!= lines.end(); ++line){
-                boost::split(newline, *line, boost::is_any_of("\t"));
-                if (newline.size() > 1) biased.second->weight[stoi(newline[0])] = stod(newline[1]);
-            }
+            cout << "Error! OPManager::read_weights(): OP_t not recognised!" << endl;
+            exit (EXIT_FAILURE);
         }
-        myfile.close();
+        for (int i = 0; i <= max; i++){
+            biased.second->weight[i] = weight;
+            weight = weight * 10.;
+        }
     }
+    else{
+        vector<string> newline;
+        for (auto line = lines.begin()+1; line!= lines.end(); ++line){
+            boost::split(newline, *line, boost::is_any_of("\t"));
+            if (newline.size() > 1) biased.second->weight[stoi(newline[0])] = stod(newline[1]);
+        }
+    }
+    myfile.close();
 }
 
 void OPManager::set_values(){
@@ -223,7 +302,12 @@ void OPManager::fill_rates_w(){
         if(tr->possible){
             if (tr->recalculate){
                 this->set_future_value(tr);
-                tr->rate_w = tr->rate * (biased.second->weight[biased.second->fut_state] / biased.second->weight[biased.second->state]);
+                if (biased.second->weight.find(biased.second->fut_state) == biased.second->weight.end()){
+                    tr->rate_w = 0;
+                }
+                else{
+                    tr->rate_w = tr->rate * (biased.second->weight[biased.second->fut_state] / biased.second->weight[biased.second->state]);
+                }
                 trManager->total_rate_w += tr->rate_w;
             }
         }
@@ -447,4 +531,38 @@ void OPManager::generate_config(){
             cout << value << "\n";
         }
     }
+}
+
+void OPManager::write_weight_gen_hist(string path) {
+    int key;
+    OrderParameter *op = biased.second;
+    ofstream hist_file;
+    hist_file.open(path, std::ofstream::out | std::ofstream::trunc);
+    hist_file << "#\t" << trManager->step << "\t" << ramp->current_t << endl;
+    hist_file << "Val\t";
+    hist_file << "Count\t";
+    hist_file << "Time\t";
+    hist_file << "Weight\t";
+    hist_file << "\n";
+    const int Ti = 0;
+    for (const auto &entry: op->weight) {
+        key = entry.first;
+        hist_file << key << "\t";
+        hist_file << op->stats[Ti].count[key] << "\t";
+        hist_file << op->stats[Ti].time[key] << "\t";
+        hist_file << op->weight[key] << "\t";
+        hist_file << "\n";
+    }
+    hist_file.close();
+}
+void OPManager::write_new_weights(string path){
+    OrderParameter *op = biased.second;
+    std::map<int,long double> w_new = get_new_weights(op->weight,op->stats[0].time);
+    ofstream w_new_file;
+    w_new_file.open(path,std::ofstream::out | std::ofstream::trunc);
+    w_new_file << op->name << std::endl;
+    for (const auto &entry : w_new) {
+        w_new_file << entry.first << "\t" << entry.second << std::endl;
+    }
+    w_new_file.close();
 }

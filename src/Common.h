@@ -10,6 +10,7 @@
 
 #include "../Headers/Headers.h"
 
+
 template <class T> void print_vec(vector<T> &vec){
 	for (int i=0; i<vec.size(); i++){
 		cout << i << "\t" << vec[i] << "\n";

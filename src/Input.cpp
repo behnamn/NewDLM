@@ -67,7 +67,7 @@ void Inputs::print_params(){
 	cout << "temp: " << temp << "\n";
 	
 	cout << "cool_rate: " << cool_rate << "\n";
-	cout << "n_cycles: " << n_cycles << "\n";
+	cout << "num_repeats: " << num_repeats << "\n";
 	cout << "max_temp: " << max_temp << "\n";
 	cout << "min_temp: " << min_temp << "\n";
 	cout << "const_T_interval: " << const_T_interval << "\n";
@@ -245,9 +245,9 @@ void Inputs::loadOptions(){
     getInputDouble("const_T_interval", &const_T_interval);
 	//getInputBool("anneal", &anneal);
 	//getInputBool("melt", &melt);
-	getInputInt("n_cycles", &n_cycles);
+	getInputInt("num_repeats", &num_repeats);
 	
-	getInputInt("seed", &seed);
+	getInputlonglong("seed", &seed);
 	getInputVectorInt("staple_species", &staple_species);
 
 	getInputString("scaffold_file", scaffold_file_name);
@@ -314,76 +314,25 @@ void Inputs::loadOptions(){
     
 	if (sim_type == "isothermal"){
 		isothermal = true;
-		anneal = false;
-		melt = false;
-        test = false;
-        convert = false;
-        config_generator = false;
-        exact = false;
     }
 	else if (sim_type == "anneal"){
-		isothermal = false;
 		anneal = true;
-		melt = false;
-        test = false;
-        convert = false;
-        config_generator = false;
-        exact = false;
     }
 	else if (sim_type == "melt"){
-		isothermal = false;
-		anneal = false;
 		melt = true;
-        test = false;
-        convert = false;
-        config_generator = false;
-        exact = false;
 	}
-    else if (sim_type == "weightgen"){
-        isothermal = true;
-        anneal = false;
-        melt = false;
-        test = false;
-        convert = false;
-        config_generator = false;
-        exact = false;
+    else if (sim_type == "weight_generator"){
+        weight_generator = true;
         umbrella_sampling = true;
     }
     else if (sim_type == "test"){
-        isothermal = false;
-        anneal = false;
-        melt = false;
         test = true;
-        convert = false;
-        config_generator = false;
-        exact = false;
-    }
-    else if (sim_type == "convert"){
-        isothermal = false;
-        anneal = false;
-        melt = false;
-        test = false;
-        convert = true;
-        config_generator = false;
-        exact = false;
     }
     else if (sim_type == "config_generator"){
-        isothermal = false;
-        anneal = false;
-        melt = false;
-        test = false;
-        convert = false;
         config_generator = true;
-        exact = false;
         umbrella_sampling = true;
     }
     else if (sim_type == "exact"){
-        isothermal = false;
-        anneal = false;
-        melt = false;
-        test = false;
-        convert = false;
-        config_generator = false;
         exact = true;
     }
 	else {
@@ -422,6 +371,14 @@ int Inputs::getInputInt(const char *skey, int *dest) {
 	*dest = (int) floor(atof(it->second.value.c_str())+0.1);
 
 	return KEY_FOUND;
+}
+long long Inputs::getInputlonglong(const char *skey, long long *dest) {
+    input_map::iterator it = getInputValue(skey);
+    if(it == input.keys.end()) return KEY_NOT_FOUND;
+
+    *dest = (long long) floor(atof(it->second.value.c_str())+0.1);
+
+    return KEY_FOUND;
 }
 
 int Inputs::getInputBool(const char *skey, bool *dest) {

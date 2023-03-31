@@ -180,7 +180,7 @@ void StatManager::update_times(){
         }
     }
     double time;
-    if (inputs->isothermal){
+    if (inputs->isothermal || inputs->weight_generator){
         idx = ramp->idx;
         time = ramp->current_t;
     }
@@ -189,11 +189,11 @@ void StatManager::update_times(){
         time = ramp->previous_t;
     }
     auto pool = design->staple_pools.begin()+inputs->target_pool;
-    check_entrance(pool->domains, idx, time, ramp->dt, inputs->isothermal, this->num_done, inputs->melt);
-    check_entrance(pool->crossovers, idx, time, ramp->dt, inputs->isothermal, this->num_done, inputs->melt);
-    check_entrance(pool->crosspairs, idx, time, ramp->dt, inputs->isothermal, this->num_done, inputs->melt);
-    check_entrance(pool->staples, idx, time, ramp->dt, inputs->isothermal, this->num_done, inputs->melt);
-    check_entrance(pool->helices, idx, time, ramp->dt, inputs->isothermal, this->num_done, inputs->melt);
+    check_entrance(pool->domains, idx, time, ramp->dt, inputs->isothermal || inputs->weight_generator, this->num_done, inputs->melt);
+    check_entrance(pool->crossovers, idx, time, ramp->dt, inputs->isothermal || inputs->weight_generator, this->num_done, inputs->melt);
+    check_entrance(pool->crosspairs, idx, time, ramp->dt, inputs->isothermal || inputs->weight_generator, this->num_done, inputs->melt);
+    check_entrance(pool->staples, idx, time, ramp->dt, inputs->isothermal || inputs->weight_generator, this->num_done, inputs->melt);
+    check_entrance(pool->helices, idx, time, ramp->dt, inputs->isothermal || inputs->weight_generator, this->num_done, inputs->melt);
     if (num_done == target_num_done) this->all_in_times_done = true;
 }
 

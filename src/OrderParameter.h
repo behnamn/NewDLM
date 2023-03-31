@@ -30,7 +30,7 @@ public:
     
     bool biased;
     int fut_state;
-    std::map<int,double> weight;
+    std::map<int, long double> weight;
     
     
     std::set<int> group_ids;
@@ -62,8 +62,8 @@ public:
 
     std::set<pair<int,int> > explored_vals;
     std::map<pair<int,int>, int> count;
-    std::map<pair<int,int>, double> time;
-    std::map<pair<int,int>, double> weight;
+    std::map<pair<int,int>, long double> time;
+    std::map<pair<int,int>, long double> weight;
 
     void set_new_value();
     void update(const double);

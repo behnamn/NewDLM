@@ -7,16 +7,25 @@
 
 #include "Simulation.h"
 
-Simulation::Simulation(OPManager* opManager_) :
-opManager(opManager_){
-    this->inputs = opManager->inputs;
-    this->constants = opManager->trManager->constants;
-    this->design = opManager->design;
-    this->G = opManager->G;
-    this->ramp = opManager->ramp;
-    this->trManager = opManager->trManager;
-    this->statManager = opManager->statManager;
-    this->ofiles = opManager->ofiles;
+Simulation::Simulation(Inputs* inputs, Constants* constants) :
+inputs(inputs), constants(constants){
+    design = new Design(inputs);
+    G = new MyGraph(design);
+    ramp = new TempRamp(inputs);
+    ofiles = new FileIO(design);
+    trManager = new TransitionManager(constants, G, ramp, ofiles);
+    statManager = new StatManager(trManager);
+    opManager = new OPManager(statManager);
+}
+
+Simulation::~Simulation() {
+    delete ofiles;
+    delete design;
+    delete G;
+    delete ramp;
+    delete trManager;
+    delete statManager;
+    delete opManager;
 }
 
 void Simulation::out_AM(){
@@ -31,7 +40,7 @@ void Simulation::out_AM(){
     }
 }
 void Simulation::out_Iso(){
-    if (trManager->step % 100 == 0){
+    if (trManager->step % 10000 == 0){
         cout << trManager->step << "\t";
         for (const auto& pool : design->staple_pools){
             cout << pool.OPs[1].state << "\t";
@@ -59,7 +68,6 @@ void Simulation::prepare_config(){
     for (const auto& it : this->opManager->biased.second->weight){
         possible_OPvals.push_back(it.first);
     }
-    //target_OPval = (*possible_OPvals.begin() + *std::prev(possible_OPvals.end()) ) /2;
     uniform_int<> uniformInt(0, possible_OPvals.size()-1);
     UniformInt_gen uni(generator,uniformInt);
     randIdx = uni();
@@ -162,16 +170,16 @@ void Simulation::run(){
             ramp->move_time(trManager->tau);
             statManager->update_times();
             statManager->update_counts();
-                opManager->update_times();
-                if (trManager->step == inputs->burn_steps)
-                    opManager->write_burn();
-                if ((trManager->step % inputs->write_hist_every == 0 && trManager->step > 0)
-                    || trManager->step == design->target_reached_at.first){
-                    ofiles->retrunc_hist_files();
-                    opManager->write();
-                    opManager->write_last();
-                    opManager->write_object_hist();
-                }
+            opManager->update_times();
+            if (trManager->step == inputs->burn_steps)
+                opManager->write_burn();
+            if ((trManager->step % inputs->write_hist_every == 0 && trManager->step > 0)
+                || trManager->step == design->target_reached_at.first){
+                ofiles->retrunc_hist_files();
+                opManager->write();
+                opManager->write_last();
+                opManager->write_object_hist();
+            }
             trManager->apply_next();
             opManager->set_values();
 
@@ -192,6 +200,26 @@ void Simulation::run(){
         statManager->write_in_times();
         cout << "------ Ending Iso Simulation ------\n";
 	}
+    else if (inputs->weight_generator) {
+        cout << "------ Starting Simulation ------\n";
+        this->prepare_config();
+        while (trManager->step < inputs->max_steps) {
+            this->out_Iso();
+            trManager->fill_rates();
+            opManager->fill_rates_w();
+            trManager->select_transition(uni);
+            ramp->move_time(trManager->tau);
+            statManager->update_times();
+            statManager->update_counts();
+            opManager->update_times();
+            trManager->apply_next();
+            opManager->set_values();
+            trManager->reset_possibles();
+            trManager->reset_recalculates();
+        }
+        cout << "------ Ending Simulation ------\n";
+    }
+
     else if (inputs->config_generator) {
         cout << "------ Starting Configuration Generator ------\n";
         while (trManager->step < inputs->max_steps && !design->target_reached) {

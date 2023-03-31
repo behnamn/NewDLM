@@ -104,6 +104,7 @@ public:
     int getInputBool(const char *skey, bool *dest);
     int getInputDouble(const char *skey, double *dest);
     int getInputInt(const char *skey, int *dest);
+    long long getInputlonglong(const char *skey, long long *dest);
     int getInputVectorInt(const char *skey, vector<int> *dest);
     int getInputChar(const char *skey, char *dest); 
     
@@ -122,7 +123,7 @@ public:
     
     string domain_energies;
 	
-    int seed;
+    long long seed;
     
     double k_bi;
     double k_uni;
@@ -186,13 +187,13 @@ public:
     //string occupancy_file_name;
 	
 	string sim_type;
-	bool anneal;
-	bool melt;
-	bool isothermal;
-    bool test;
-    bool convert;
-    bool config_generator;
-    bool exact;
+	bool anneal = false;
+	bool melt = false;
+	bool isothermal = false;
+    bool test = false;
+    bool weight_generator = false;
+    bool config_generator = false;
+    bool exact = false;
 	
     bool track_clusters;
 
@@ -208,7 +209,9 @@ public:
 	double min_temp;
 	double cool_rate;
 	double const_T_interval;
-	int n_cycles;
+
+    int num_repeats; // For weight_generator
+
 	
     int coat_with;
     int rotated_pool;

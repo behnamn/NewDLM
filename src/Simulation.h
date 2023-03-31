@@ -13,8 +13,8 @@
 
 class Simulation{
 public:
-	Simulation(OPManager*);
-    ~Simulation(){}
+	Simulation(Inputs* inputs, Constants* constants);
+    ~Simulation();
 
     Inputs* inputs;
     Constants* constants;

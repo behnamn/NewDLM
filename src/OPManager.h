@@ -13,6 +13,7 @@
 #include "StatManager.h"
 //#include "OrderParameter.h"
 
+std::map<int,long double> get_new_weights(std::map<int,long double>& w_old, std::map<int,long double>& times);
 
 template <class obj, class state_t>
 void write_obj_hist(ofstream& myfile,
@@ -91,6 +92,10 @@ public:
     vector<int> done_configs;
     
     void print();
+
+    void write_weight_gen_hist(string path);
+    void write_new_weights(string path);
+
 };
 
 

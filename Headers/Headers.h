@@ -201,7 +201,7 @@ public:
     }
     vector<int> n_tr;
     std::map<T, int> count;
-    std::map<T, double> time;
+    std::map<T, long double> time;
 };
 template <>
 class Stat <int> {
@@ -215,7 +215,7 @@ public:
     }
     vector<int> n_tr;
     std::map<int, int> count;
-    std::map<int, double> time;
+    std::map<int, long double> time;
     
     //Special Members
     int n;
