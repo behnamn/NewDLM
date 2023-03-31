@@ -56,23 +56,43 @@ void Simulation::write_movie(){
     G->write(str);
 }
 
-void Simulation::prepare_config(){
-
-    base_generator_type generator(inputs->seed);
-    typedef boost::variate_generator<base_generator_type&, uniform_int<> > UniformInt_gen;
-    int randIdx;
+void Simulation::prepare_config(char type){
+    /* options:
+     * 'r': randomly select initial config
+     * 'l': select lowest possible opVal
+     * 'h': select highest possible opVal
+     * 'm': select middle opVal
+    */
 
     int current_OPval, target_OPval;
     current_OPval = this->opManager->biased.second->state;
     vector<int> possible_OPvals;
-    for (const auto& it : this->opManager->biased.second->weight){
+    for (const auto &it: this->opManager->biased.second->weight) {
         possible_OPvals.push_back(it.first);
     }
-    uniform_int<> uniformInt(0, possible_OPvals.size()-1);
-    UniformInt_gen uni(generator,uniformInt);
-    randIdx = uni();
-    target_OPval = possible_OPvals[randIdx];
+    typedef boost::variate_generator<base_generator_type &, uniform_int<> > UniformInt_gen;
+    base_generator_type generator(inputs->seed);
+    int randIdx;
 
+    if (type == 'r') {
+        uniform_int<> uniformInt(0, possible_OPvals.size() - 1);
+        UniformInt_gen uni(generator, uniformInt);
+        randIdx = uni();
+        target_OPval = possible_OPvals[randIdx];
+    }
+    else if (type == 'l') {
+        target_OPval = *possible_OPvals.begin();
+    }
+    else if (type == 'h') {
+        target_OPval = *possible_OPvals.rbegin();
+    }
+    else if (type == 'm') {
+        target_OPval = (*possible_OPvals.begin() + *possible_OPvals.rbegin()) / 2;
+    }
+    else {
+        cout << "Error: Select a type of initial configuration for Simulation::generate_config().\n";
+        exit (EXIT_FAILURE);
+    }
 
     vector<Transition*> possible_trs;
     while (target_OPval != current_OPval){
@@ -202,7 +222,6 @@ void Simulation::run(){
 	}
     else if (inputs->weight_generator) {
         cout << "------ Starting Simulation ------\n";
-        this->prepare_config();
         while (trManager->step < inputs->max_steps) {
             this->out_Iso();
             trManager->fill_rates();

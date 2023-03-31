@@ -30,7 +30,7 @@ public:
     void out_Iso();
     void out_AM();
     void write_movie();
-    void prepare_config();
+    void prepare_config(char type = 'r');
     
     string str;
     

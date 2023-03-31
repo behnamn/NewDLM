@@ -4,6 +4,7 @@
 #include "../src/TempRamp.h"
 #include "../src/Simulation.h"
 #include "../src/Exact.h"
+#include "../src/WeighGen.h"
 
 
 void test_loops(Constants* constants, MyGraph *G,  Design *design){
@@ -260,16 +261,6 @@ void test_ramp(){
     ramp->print();
 }
 
-bool has_zero_value(const std::map<int, int>& my_map) {
-    for (const auto& entry : my_map) {
-        if (entry.second == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-
 int main(int argc, char * argv[]) {
     Inputs inputs = Inputs(argc,argv);
     Constants constants = Constants(&inputs);
@@ -292,131 +283,82 @@ int main(int argc, char * argv[]) {
         sim.run();
     }
     else if (inputs.weight_generator){
-        std::map<int,long double> times, weights;
-        std::map<int,int> counts;
-        std::string og_w_file_name = inputs.w_file_name;
-        std::size_t dot_position = og_w_file_name.find('.');
-        std::string name = og_w_file_name.substr(0, dot_position);
-        std::string extension = og_w_file_name.substr(dot_position + 1);
-        struct stat st;
-        string idummy, dummy;
-        string command = "mv Weights ";
-        if (stat("Weights", &st) == 0) {
-            for (int i = 1; i < 100; i++) {
-                idummy = to_string(i);
-                dummy = "Weights" + idummy;
-                if (!(stat(dummy.c_str(), &st) == 0)) {
-                    break;
-                }
-            }
-            command += dummy;
-            std::system(command.c_str());
-            cout << "Renamed old Weights to " << dummy << "\n";
-        }
-        std::system("mkdir Weights");
+        ofstream infoFile;
+        open_info_file(infoFile);
+        string opName;
+        std::map<int,long double> times, weights, Times, Weights;
+        std::map<int,int> counts, Counts;
+        std::string wFileNameOG = inputs.w_file_name;
+        make_weight_directory();
+        vector<long double> mean_var_std;
+        long double mean, variance, std_dev, StdOverMean;
         bool finished = false;
+        StdOverMean = 9999999;
         int repeat = 0;
-        long double StdOverMean = 9999999;
-        ofstream info_file;
-        std::string info_file_name = "Weights/Info.txt";
-        info_file.open(info_file_name,std::ofstream::out | std::ofstream::trunc);
-        info_file << "Repeat" << "\t" << "Seed" << "\t" << "wfile" << "\t";
-        info_file << "Mean" << "\t" << "Variance" << "\t" << "Std" << "\t" << "Std/Mean";
-        info_file << std::endl;
+
         std::cout << "------------------------------------------------ Beginning Generation Steps " << std::endl;
         while (!finished){
             std::cout << "------------------------ Weight Generation Step " << repeat << " of " << inputs.num_repeats << std::endl;
             inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
-            info_file << repeat << "\t" << inputs.seed << "\t" << inputs.w_file_name << "\t";
+            infoFile << repeat << "\t" << inputs.seed << "\t" << inputs.w_file_name << "\t";
             Simulation sim = Simulation(&inputs, &constants);
+            sim.prepare_config();
             sim.run();
-            std::string newname = std::to_string(repeat) + "_" + name;
-            std::string new_w_file_name = "Weights/"+ newname + "." + extension;
-            std::string new_hist_file_name = "Weights/"+std::to_string(repeat)+"_Hist.txt";
-            sim.opManager->write_new_weights(new_w_file_name);
-            sim.opManager->write_weight_gen_hist(new_hist_file_name);
-            // Calculate the mean, variance, and standard deviation of the w_new values
-            long double sum = 0;
-            long double sum_of_squares = 0;
-            int count = 0;
-            for (const auto &entry : sim.opManager->biased.second->stats[0].time) {
-                sum += entry.second;
-                sum_of_squares += entry.second * entry.second;
-                count++;
-            }
-            long double mean = sum / count;
-            long double variance = (sum_of_squares / count) - (mean * mean);
-            long double std_dev = std::sqrt(variance);
+            opName = sim.opManager->biased.second->name;
+            weights = sim.opManager->biased.second->weight;
+            times = sim.opManager->biased.second->stats[0].time;
+            counts = sim.opManager->biased.second->stats[0].count;
+            std::string wFileNameNew = "Weights/" + std::to_string(repeat) + "_" + wFileNameOG;
+            std::string histFileNameNew = "Weights/" + std::to_string(repeat) + "_Hist.txt";
+            write_new_weights(wFileNameNew, opName, weights, times);
+            write_hist(histFileNameNew, weights, counts, times);
+            mean_var_std = get_mean_var_std(times);
+            mean = mean_var_std[0];
+            variance = mean_var_std[1];
+            std_dev = mean_var_std[2];
             StdOverMean = std_dev / mean;
-            info_file << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
-
-            inputs.w_file_name = new_w_file_name;
+            infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
+            inputs.w_file_name = wFileNameNew;
             repeat++;
-            if (repeat == inputs.num_repeats || ( StdOverMean < 1 && !has_zero_value(sim.opManager->biased.second->stats[0].count) ) ){
+            if (repeat == inputs.num_repeats || ( StdOverMean < 1 && !has_zero_value(counts) ) ){
                 finished = true;
-                times = sim.opManager->biased.second->stats[0].time;
-                counts = sim.opManager->biased.second->stats[0].count;
-                weights = sim.opManager->biased.second->weight;
             }
         }
         std::cout << "------------------------------------------------ Beginning Final Steps " << std::endl;
-        info_file << "x" << inputs.num_repeats << "\t" << "NA" << "\t" << inputs.w_file_name << "\t";
+        infoFile << "x" << inputs.num_repeats << "\t" << "NA" << "\t" << inputs.w_file_name << "\t";
+        Times = times;
+        Weights = weights;
+        Counts = counts;
         repeat = 0;
         while (repeat < inputs.num_repeats){
             std::cout << "------------------------ Final Step " << repeat << " of " << inputs.num_repeats << std::endl;
             inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
             Simulation sim = Simulation(&inputs, &constants);
+            sim.prepare_config();
             sim.run();
-            for (auto& entry : times){
-                entry.second += sim.opManager->biased.second->stats[0].time[entry.first];
-                counts[entry.first] += sim.opManager->biased.second->stats[0].count[entry.first];
+            opName = sim.opManager->biased.second->name;
+            weights = sim.opManager->biased.second->weight;
+            times = sim.opManager->biased.second->stats[0].time;
+            counts = sim.opManager->biased.second->stats[0].count;
+            for (auto& entry : Times){
+                Times[entry.first] += times[entry.first];
+                Counts[entry.first] += counts[entry.first];
             }
             repeat++;
         }
-        for (auto& entry : times){
+        for (auto& entry : Times){
             std::cout << entry.first << "\t" << entry.second << std::endl;
         }
-        // Calculate the mean, variance, and standard deviation of the w_new values
-        long double sum = 0;
-        long double sum_of_squares = 0;
-        int count = 0;
-        for (const auto &entry : times) {
-            sum += entry.second;
-            sum_of_squares += entry.second * entry.second;
-            count++;
-        }
-        long double mean = sum / count;
-        long double variance = (sum_of_squares / count) - (mean * mean);
-        long double std_dev = std::sqrt(variance);
+        mean_var_std = get_mean_var_std(Times);
+        mean = mean_var_std[0];
+        variance = mean_var_std[1];
+        std_dev = mean_var_std[2];
         StdOverMean = std_dev / mean;
-        info_file << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
-        ofstream hist_file;
-        hist_file.open("Weights/Hist.txt", std::ofstream::out | std::ofstream::trunc);
-        hist_file << "Val\t";
-        hist_file << "Count\t";
-        hist_file << "Time\t";
-        hist_file << "Weight\t";
-        hist_file << "\n";
-        const int Ti = 0;
-        for (const auto &entry: weights) {
-            int key = entry.first;
-            hist_file << key << "\t";
-            hist_file << counts[key] << "\t";
-            hist_file << times[key] << "\t";
-            hist_file << weights[key] << "\t";
-            hist_file << "\n";
-        }
-        std::map<int,long double> w_new = get_new_weights(weights,times);
-        ofstream w_new_file;
-        w_new_file.open("Weights/"+og_w_file_name,std::ofstream::out | std::ofstream::trunc);
-        Simulation sim = Simulation(&inputs, &constants);
-        w_new_file << sim.opManager->biased.second->name << std::endl;
-        for (const auto &entry : w_new) {
-            w_new_file << entry.first << "\t" << entry.second << std::endl;
-        }
-        w_new_file.close();
-        hist_file.close();
-        info_file.close();
+        infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
+        write_hist("Weights/Hist.txt", Weights, Counts, Times);
+        write_new_weights("Weights/"+wFileNameOG, opName, Weights, Times);
+
+        infoFile.close();
     }
     else{
         printf ("Please select sim type: test, anneal, melt, isothermal, config_generator.\n");
