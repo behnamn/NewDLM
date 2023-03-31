@@ -303,16 +303,18 @@ void Design::calc_subdom_energies(){
             dom->dH_seq = dH;
             dom->dS_seq = dS;
         }
-        vector<double> dH_per_bp_seq_list, dS_per_bp_seq_list;
+        double total_dH, total_dS = 0;
+        int num_nns = 0;
         for(auto &domain : this->domains){
-            dH_per_bp_seq_list.push_back(domain.dH_seq / (domain.length*1.));
-            dS_per_bp_seq_list.push_back(domain.dS_seq / (domain.length*1.));
+            total_dH += domain.dH_seq;
+            total_dS += domain.dS_seq;
+            num_nns += domain.length-1;
         }
-        double dH_per_bp_seq = accumulate(dH_per_bp_seq_list.begin(), dH_per_bp_seq_list.end(), 0.0) / (1.*dH_per_bp_seq_list.size());
-        double dS_per_bp_seq = accumulate(dS_per_bp_seq_list.begin(), dS_per_bp_seq_list.end(), 0.0) / (1.*dS_per_bp_seq_list.size());
+        double dH_per_nn = total_dH / num_nns;
+        double dS_per_nn = total_dS / num_nns;
         for(auto &domain : this->domains){
-            domain.dH_seqave = domain.length * dH_per_bp_seq;
-            domain.dS_seqave = domain.length * dS_per_bp_seq;
+            domain.dH_seqave = (domain.length-1) * dH_per_nn;
+            domain.dS_seqave = (domain.length-1) * dS_per_nn;
         }
         for (auto dom = domains.begin(); dom!=domains.end(); ++dom){
             dom->dH = dom->dH_seqave;

@@ -275,19 +275,9 @@ int main(int argc, char * argv[]) {
     Constants constants = Constants(&inputs);
     if (inputs.test){
         Design design = Design(&inputs);
-        //do_test();
-        design.print_OPs();
-        for (auto &pool : design.staple_pools){
-            pool.print_OPs();
+        for (const auto& dom : design.domains){
+            std::cout << dom.id << "\t" << dom.dH_seq << "\t" << dom.dH_seqave << std::endl;
         }
-
-        //G->print_embedding();
-
-        //test_loops(constants,G,design);
-        //test_full(sim);
-        //double Tm = calculate_Tm(sim);
-        //test_random();
-        //test_ramp();
     }
     else if (inputs.exact){
         Simulation sim = Simulation(&inputs, &constants);
