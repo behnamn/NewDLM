@@ -165,6 +165,7 @@ void write_hist(const string& path, map<int,long double>& weight, map<int,int>& 
     hist_file.close();
 }
 
+
 void write_new_weights(const string& path, const string& opName, map<int,long double>& weight, map<int,long double>& time){
     std::map<int,long double> w_new = get_new_weights(weight,time);
     ofstream w_new_file;

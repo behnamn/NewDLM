@@ -283,20 +283,216 @@ int main(int argc, char * argv[]) {
         sim.run();
     }
     else if (inputs.weight_generator){
+        make_weight_directory();
         ofstream infoFile;
         open_info_file(infoFile);
         string opName;
         std::map<int,long double> times, weights, Times, Weights;
         std::map<int,int> counts, Counts;
-        std::string wFileNameOG = inputs.w_file_name;
-        make_weight_directory();
         vector<long double> mean_var_std;
         long double mean, variance, std_dev, StdOverMean;
-        bool finished = false;
-        StdOverMean = 9999999;
-        int repeat = 0;
+        int repeat;
+        bool finished;
+        std::string wFileNameOG = inputs.w_file_name;
+        std::vector<char> limits = {'l', 'm', 'h'};
 
-        std::cout << "------------------------------------------------ Beginning Generation Steps " << std::endl;
+        std::cout << "------------------------------------------------ Beginning LMH Steps " << std::endl;
+        repeat = 1;
+        finished = false;
+        while (!finished){
+            std::cout << "------------------------ LMH Step " << repeat << " of " << inputs.num_repeats << std::endl;
+            for (char limit : limits) {
+                std::cout << "--------- Step " << limit << std::endl;
+                inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
+                infoFile << limit << "\t" << inputs.seed << "\t" << inputs.w_file_name << "\t"; infoFile << std::flush;
+                Simulation sim = Simulation(&inputs, &constants);
+                sim.prepare_config(limit);
+                sim.run();
+                opName = sim.opManager->biased.second->name;
+                weights = sim.opManager->biased.second->weight;
+                times = sim.opManager->biased.second->stats[0].time;
+                counts = sim.opManager->biased.second->stats[0].count;
+                mean_var_std = get_mean_var_std(times);
+                mean = mean_var_std[0]; variance = mean_var_std[1]; std_dev = mean_var_std[2];
+                StdOverMean = std_dev / mean;
+                infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl; infoFile << std::flush;
+                if (limit == 'l'){
+                    for (auto& entry : weights) {
+                        Weights[entry.first] = entry.second;
+                        Times[entry.first] += 0;
+                        Counts[entry.first] += 0;
+                    }
+                }
+                for (auto& entry : Weights){
+                    if (!(times.find(entry.first) == times.end()))
+                        Times[entry.first] += times[entry.first];
+                    if (!(counts.find(entry.first) == counts.end()))
+                        Counts[entry.first] += counts[entry.first];
+                }
+            }
+            std::string histFileNameNew = "Weights/LMH" + std::to_string(repeat) + "_Hist.txt";
+            std::string wFileNameNew = "Weights/LMH" + std::to_string(repeat) + "_" + wFileNameOG;
+            write_hist(histFileNameNew, Weights, Counts, Times);
+            write_new_weights(wFileNameNew, opName, Weights, Times);
+            mean_var_std = get_mean_var_std(Times);
+            mean = mean_var_std[0]; variance = mean_var_std[1]; std_dev = mean_var_std[2];
+            StdOverMean = std_dev / mean;
+            infoFile << "LMH" << repeat << "\t" << "x3" << "\t" << inputs.w_file_name << "\t";
+            infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
+            infoFile << std::flush;
+            inputs.w_file_name = wFileNameNew;
+            repeat++;
+            if (!has_zero_value(Counts) || repeat == inputs.num_repeats){
+                finished = true;
+            }
+        }
+
+        std::cout << "------------------------------------------------ Beginning Random Steps " << std::endl;
+        repeat = 1;
+        StdOverMean = 9999999;
+        finished = false;
+        while (!finished){
+            std::cout << "------------------------ Random Step " << repeat << " of " << inputs.num_repeats << std::endl;
+            for (int limit : {1,2,3}) {
+                std::cout << "--------- Step " << limit << std::endl;
+                inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
+                infoFile << limit << "\t" << inputs.seed << "\t" << inputs.w_file_name << "\t"; infoFile << std::flush;
+                Simulation sim = Simulation(&inputs, &constants);
+                sim.prepare_config('r');
+                sim.run();
+                opName = sim.opManager->biased.second->name;
+                weights = sim.opManager->biased.second->weight;
+                times = sim.opManager->biased.second->stats[0].time;
+                counts = sim.opManager->biased.second->stats[0].count;
+                mean_var_std = get_mean_var_std(times);
+                mean = mean_var_std[0]; variance = mean_var_std[1]; std_dev = mean_var_std[2];
+                StdOverMean = std_dev / mean;
+                infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl; infoFile << std::flush;
+                if (limit == 1){
+                    for (auto& entry : weights) {
+                        Weights[entry.first] = entry.second;
+                        Times[entry.first] += 0;
+                        Counts[entry.first] += 0;
+                    }
+                }
+                for (auto& entry : Weights){
+                    if (!(times.find(entry.first) == times.end()))
+                        Times[entry.first] += times[entry.first];
+                    if (!(counts.find(entry.first) == counts.end()))
+                        Counts[entry.first] += counts[entry.first];
+                }
+            }
+            std::string histFileNameNew = "Weights/r" + std::to_string(repeat) + "_Hist.txt";
+            std::string wFileNameNew = "Weights/r" + std::to_string(repeat) + "_" + wFileNameOG;
+            write_hist(histFileNameNew, Weights, Counts, Times);
+            write_new_weights(wFileNameNew, opName, Weights, Times);
+            mean_var_std = get_mean_var_std(Times);
+            mean = mean_var_std[0]; variance = mean_var_std[1]; std_dev = mean_var_std[2];
+            StdOverMean = std_dev / mean;
+            infoFile << "r" << repeat << "\t" << "x3" << "\t" << inputs.w_file_name << "\t";
+            infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
+            infoFile << std::flush;
+            inputs.w_file_name = wFileNameNew;
+            repeat++;
+            if ( (StdOverMean < 1 && !has_zero_value(Counts)) || repeat == inputs.num_repeats ){
+                finished = true;
+            }
+        }
+
+        std::cout << "------------------------------------------------ Beginning Final Steps a" << std::endl;
+        repeat = 1;
+        while (repeat < inputs.num_repeats){
+            std::cout << "------------------------ Final Step " << repeat << " of " << inputs.num_repeats << std::endl;
+            inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
+            infoFile << repeat << "\t" << inputs.seed << "\t" << inputs.w_file_name << "\t"; infoFile << std::flush;
+            Simulation sim = Simulation(&inputs, &constants);
+            sim.prepare_config();
+            sim.run();
+            opName = sim.opManager->biased.second->name;
+            Weights = weights = sim.opManager->biased.second->weight;
+            times = sim.opManager->biased.second->stats[0].time;
+            counts = sim.opManager->biased.second->stats[0].count;
+            mean_var_std = get_mean_var_std(times);
+            mean = mean_var_std[0]; variance = mean_var_std[1]; std_dev = mean_var_std[2];
+            StdOverMean = std_dev / mean;
+            infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl; infoFile << std::flush;
+            for (auto& entry : Weights){
+                if (!(times.find(entry.first) == times.end()))
+                    Times[entry.first] += times[entry.first];
+                if (!(counts.find(entry.first) == counts.end()))
+                    Counts[entry.first] += counts[entry.first];
+            }
+            repeat++;
+        }
+        for (auto& entry : Times){
+            std::cout << entry.first << "\t" << entry.second << std::endl;
+        }
+        mean_var_std = get_mean_var_std(Times);
+        mean = mean_var_std[0];
+        variance = mean_var_std[1];
+        std_dev = mean_var_std[2];
+        StdOverMean = std_dev / mean;
+        infoFile << "a_x" << inputs.num_repeats << "\t" << "NA" << "\t" << inputs.w_file_name << "\t";
+        infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
+        infoFile << std::flush;
+        write_hist("Weights/a_Hist.txt", Weights, Counts, Times);
+        write_new_weights("Weights/a_"+wFileNameOG, opName, Weights, Times);
+        inputs.w_file_name = "Weights/a_"+wFileNameOG;
+
+        std::cout << "------------------------------------------------ Beginning Final Steps b" << std::endl;
+        repeat = 1;
+        while (repeat < inputs.num_repeats){
+            std::cout << "------------------------ Final Step " << repeat << " of " << inputs.num_repeats << std::endl;
+            inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
+            infoFile << repeat << "\t" << inputs.seed << "\t" << inputs.w_file_name << "\t"; infoFile << std::flush;
+            Simulation sim = Simulation(&inputs, &constants);
+            sim.prepare_config();
+            sim.run();
+            opName = sim.opManager->biased.second->name;
+            Weights = weights = sim.opManager->biased.second->weight;
+            times = sim.opManager->biased.second->stats[0].time;
+            counts = sim.opManager->biased.second->stats[0].count;
+            mean_var_std = get_mean_var_std(times);
+            mean = mean_var_std[0]; variance = mean_var_std[1]; std_dev = mean_var_std[2];
+            StdOverMean = std_dev / mean;
+            infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl; infoFile << std::flush;
+            for (auto& entry : Weights){
+                if (!(times.find(entry.first) == times.end()))
+                    Times[entry.first] += times[entry.first];
+                if (!(counts.find(entry.first) == counts.end()))
+                    Counts[entry.first] += counts[entry.first];
+            }
+            repeat++;
+        }
+        for (auto& entry : Times){
+            std::cout << entry.first << "\t" << entry.second << std::endl;
+        }
+        mean_var_std = get_mean_var_std(Times);
+        mean = mean_var_std[0];
+        variance = mean_var_std[1];
+        std_dev = mean_var_std[2];
+        StdOverMean = std_dev / mean;
+        infoFile << "b_x" << inputs.num_repeats << "\t" << "NA" << "\t" << inputs.w_file_name << "\t";
+        infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
+        infoFile << std::flush;
+        write_hist("Weights/b_Hist.txt", Weights, Counts, Times);
+        write_new_weights("Weights/b_"+wFileNameOG, opName, Weights, Times);
+
+        infoFile.close();
+    }
+    else{
+        printf ("Please select sim type: test, anneal, melt, isothermal, config_generator.\n");
+        exit (EXIT_FAILURE);
+    }
+
+    return 0;
+}
+
+/*
+         std::cout << "------------------------------------------------ Beginning Generation Steps " << std::endl;
+        finished = false;
+        StdOverMean = 9999999;
+        repeat = 0;
         while (!finished){
             std::cout << "------------------------ Weight Generation Step " << repeat << " of " << inputs.num_repeats << std::endl;
             inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -324,46 +520,4 @@ int main(int argc, char * argv[]) {
                 finished = true;
             }
         }
-        std::cout << "------------------------------------------------ Beginning Final Steps " << std::endl;
-        infoFile << "x" << inputs.num_repeats << "\t" << "NA" << "\t" << inputs.w_file_name << "\t";
-        Times = times;
-        Weights = weights;
-        Counts = counts;
-        repeat = 0;
-        while (repeat < inputs.num_repeats){
-            std::cout << "------------------------ Final Step " << repeat << " of " << inputs.num_repeats << std::endl;
-            inputs.seed = std::chrono::system_clock::now().time_since_epoch().count();
-            Simulation sim = Simulation(&inputs, &constants);
-            sim.prepare_config();
-            sim.run();
-            opName = sim.opManager->biased.second->name;
-            weights = sim.opManager->biased.second->weight;
-            times = sim.opManager->biased.second->stats[0].time;
-            counts = sim.opManager->biased.second->stats[0].count;
-            for (auto& entry : Times){
-                Times[entry.first] += times[entry.first];
-                Counts[entry.first] += counts[entry.first];
-            }
-            repeat++;
-        }
-        for (auto& entry : Times){
-            std::cout << entry.first << "\t" << entry.second << std::endl;
-        }
-        mean_var_std = get_mean_var_std(Times);
-        mean = mean_var_std[0];
-        variance = mean_var_std[1];
-        std_dev = mean_var_std[2];
-        StdOverMean = std_dev / mean;
-        infoFile << mean << "\t" << variance << "\t" << std_dev << "\t" << StdOverMean << std::endl;
-        write_hist("Weights/Hist.txt", Weights, Counts, Times);
-        write_new_weights("Weights/"+wFileNameOG, opName, Weights, Times);
-
-        infoFile.close();
-    }
-    else{
-        printf ("Please select sim type: test, anneal, melt, isothermal, config_generator.\n");
-        exit (EXIT_FAILURE);
-    }
-
-    return 0;
-}
+ */

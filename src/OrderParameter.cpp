@@ -15,6 +15,13 @@ pool_id(pool_id_), type(type_), name(name_) {
 }
 int OrderParameter::counter = 0;
 
+ostream &operator<<(ostream &os, const OrderParameter &orderParameter) {
+    os << "name: " << orderParameter.name << " prev_prev_state: " << orderParameter.prev_prev_state << " prev_state: "
+       << orderParameter.prev_state << " state: " << orderParameter.state << " biased: " << orderParameter.biased
+       << " fut_state: " << orderParameter.fut_state;//  << " stats: " << orderParameter.stats;
+    return os;
+}
+
 
 OrderParameter2D::OrderParameter2D(OrderParameter* OP1_, OrderParameter* OP2_) : OP1(OP1_) , OP2(OP2_){
     this->name = OP1->name;

@@ -223,7 +223,10 @@ void OPManager::fill_rates_w(){
                     tr->rate_w = 0;
                 }
                 else{
-                    tr->rate_w = tr->rate * (biased.second->weight[biased.second->fut_state] / biased.second->weight[biased.second->state]);
+                    if (!(biased.second->weight.find(biased.second->fut_state) == biased.second->weight.end()))
+                        tr->rate_w = tr->rate * (biased.second->weight[biased.second->fut_state] / biased.second->weight[biased.second->state]);
+                    else
+                        tr->rate_w = 0;
                 }
                 trManager->total_rate_w += tr->rate_w;
             }

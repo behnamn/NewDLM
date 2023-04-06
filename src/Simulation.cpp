@@ -134,11 +134,29 @@ void Simulation::prepare_config(char type){
         randIdx = uni2();
         possible_trs[randIdx]->apply(G);
         G->fill_components();
-
         current_OPval = this->opManager->biased.second->state;
     }
-
+    trManager->reset_possibles();
 }
+
+
+void Simulation::print_debug() {
+    std::cout << trManager->step << ":\n";
+    for (auto st : design->staple_pools[0].staples){
+        cout << st.state << "\t";
+    }   cout << "\n";
+    for (auto dom : design->staple_pools[0].domains){
+        cout << dom.state << "\t";
+    }   cout << "\n";
+    for (auto cr : design->staple_pools[0].crossovers){
+        cout << cr.state << "\t";
+    }   cout << "\n";
+    for (auto op : design->staple_pools[0].OPs){
+        cout << op << "\n";
+    }
+    std::cout << G->embedding_storage << "\n";
+}
+
 
 void Simulation::run(){
     base_generator_type generator(inputs->seed);
@@ -207,7 +225,8 @@ void Simulation::run(){
             if (inputs->make_movie) this->write_movie();
             trManager->reset_possibles();
             trManager->reset_recalculates();
-            if(!inputs->umbrella_sampling && design->target_reached && statManager->all_in_times_done) { cout << "Target Reached!" << endl;
+            if(!inputs->umbrella_sampling && design->target_reached && statManager->all_in_times_done) {
+                cout << "Target Reached!" << endl;
                 break;
             }
 		}
@@ -221,22 +240,21 @@ void Simulation::run(){
         cout << "------ Ending Iso Simulation ------\n";
 	}
     else if (inputs->weight_generator) {
-        cout << "------ Starting Simulation ------\n";
         while (trManager->step < inputs->max_steps) {
             this->out_Iso();
-            trManager->fill_rates();
-            opManager->fill_rates_w();
-            trManager->select_transition(uni);
-            ramp->move_time(trManager->tau);
-            statManager->update_times();
-            statManager->update_counts();
-            opManager->update_times();
-            trManager->apply_next();
-            opManager->set_values();
-            trManager->reset_possibles();
+            //this->print_debug();
+            trManager->fill_rates(); 
+            opManager->fill_rates_w(); 
+            trManager->select_transition(uni); 
+            ramp->move_time(trManager->tau); 
+            statManager->update_times(); 
+            statManager->update_counts(); 
+            opManager->update_times(); 
+            trManager->apply_next(); 
+            opManager->set_values(); 
+            trManager->reset_possibles(); 
             trManager->reset_recalculates();
         }
-        cout << "------ Ending Simulation ------\n";
     }
 
     else if (inputs->config_generator) {

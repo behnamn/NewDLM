@@ -33,9 +33,14 @@ public:
     void prepare_config(char type = 'r');
     
     string str;
-    
+
+    void print_debug();
+
     void test();
 };
+
+
+
 
 #endif
 

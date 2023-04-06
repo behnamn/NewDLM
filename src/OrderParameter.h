@@ -9,6 +9,7 @@
 #ifndef OrderParameter_h
 #define OrderParameter_h
 
+#include <ostream>
 #include "Common.h"
 
 class OrderParameter{
@@ -43,6 +44,8 @@ public:
      in TempRamp
      */
     vector<Stat<int>> stats;
+
+    friend ostream &operator<<(ostream &os, const OrderParameter &orderParameter);
 };
 
 class OrderParameter2D{
