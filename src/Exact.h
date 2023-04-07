@@ -242,8 +242,8 @@ double calculate_Tm(Simulation* sim){
         target.push_back(staple.possible_states[lastIdx]);
     }
 
-    std::cout << empty << std::endl;
-    std::cout << target << std::endl;
+    //std::cout << empty << std::endl;
+    //std::cout << target << std::endl;
 
     double H0_duplex, H0_stack, S0_duplex, S0_stack, S0_shape;
     double Hf_duplex, Hf_stack, Sf_duplex, Sf_stack, Sf_shape;
