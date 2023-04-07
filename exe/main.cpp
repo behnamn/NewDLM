@@ -285,10 +285,13 @@ int main(int argc, char * argv[]) {
     else if (inputs.weight_generator){
         std::cout << "Input Temperature: " << inputs.temp << endl;
         if (inputs.temp < 0){
+            string ogRateModel = inputs.rate_model;
+            if (ogRateModel == "local") inputs.rate_model = "global";
             double deltaT = -1.*(inputs.temp+100.);
             Simulation sim = Simulation(&inputs, &constants);
             double Tm = calculate_Tm(&sim);
             inputs.temp = centigrade(Tm) + deltaT;
+            inputs.rate_model = ogRateModel;
         }
         std::cout << "New Temperature: " << inputs.temp << endl;
 
