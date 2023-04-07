@@ -265,6 +265,7 @@ double calculate_Tm(Simulation* sim){
 
     double Tm = (Hf-H0)/(Sf-S0);
 
+    /*
     std::cout << H0 << ":( ";
     std::cout << H0_duplex << ", ";
     std::cout << H0_stack << " )\t";
@@ -284,7 +285,7 @@ double calculate_Tm(Simulation* sim){
     std::cout << std::endl;
 
     std::cout << centigrade(Tm) << std::endl;
-
+    */
     return Tm;
 }
 

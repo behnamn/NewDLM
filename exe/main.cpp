@@ -283,6 +283,15 @@ int main(int argc, char * argv[]) {
         sim.run();
     }
     else if (inputs.weight_generator){
+        std::cout << "Input Temperature: " << inputs.temp << endl;
+        if (inputs.temp < 0){
+            double deltaT = -1.*(inputs.temp+100.);
+            Simulation sim = Simulation(&inputs, &constants);
+            double Tm = calculate_Tm(&sim);
+            inputs.temp = centigrade(Tm) + deltaT;
+        }
+        std::cout << "New Temperature: " << inputs.temp << endl;
+
         make_weight_directory();
         ofstream infoFile;
         open_info_file(infoFile);
