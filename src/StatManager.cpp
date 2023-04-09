@@ -221,7 +221,7 @@ void StatManager::write_op_stats(){
             }
         }
         ofiles->stats_file << "\n";
-        //ofiles->stats_file << std::flush;
+        ofiles->stats_file << std::flush;
     }
     if (dummy){
         if (inputs->isothermal){
@@ -273,7 +273,7 @@ void StatManager::write_op_stats(){
             }
         }
         ofiles->stats_file << "\n";
-        //ofiles->stats_file << std::flush;
+        ofiles->stats_file << std::flush;
     }
 }
 void StatManager::write_object_stats(){
@@ -377,5 +377,5 @@ void StatManager::write_in_times(){
         }
         ofiles->times_file << "\n";
     }
-    //ofiles->times_file << std::flush;
+    ofiles->times_file << std::flush;
 }

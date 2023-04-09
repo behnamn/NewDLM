@@ -264,6 +264,21 @@ void test_ramp(){
 int main(int argc, char * argv[]) {
     Inputs inputs = Inputs(argc,argv);
     Constants constants = Constants(&inputs);
+
+    if (inputs.weight_generator || inputs.isothermal) {
+        std::cout << "Input Temperature: " << inputs.temp << endl;
+        if (inputs.temp < 0) {
+            string ogRateModel = inputs.rate_model;
+            if (ogRateModel == "local") inputs.rate_model = "global";
+            double deltaT = -1. * (inputs.temp + 100.);
+            Simulation sim = Simulation(&inputs, &constants);
+            double Tm = calculate_Tm(&sim);
+            inputs.temp = centigrade(Tm) + deltaT;
+            inputs.rate_model = ogRateModel;
+        }
+        std::cout << "New Temperature: " << inputs.temp << endl;
+    }
+
     if (inputs.test){
         Design design = Design(&inputs);
         for (const auto& dom : design.domains){
@@ -283,18 +298,6 @@ int main(int argc, char * argv[]) {
         sim.run();
     }
     else if (inputs.weight_generator){
-        std::cout << "Input Temperature: " << inputs.temp << endl;
-        if (inputs.temp < 0){
-            string ogRateModel = inputs.rate_model;
-            if (ogRateModel == "local") inputs.rate_model = "global";
-            double deltaT = -1.*(inputs.temp+100.);
-            Simulation sim = Simulation(&inputs, &constants);
-            double Tm = calculate_Tm(&sim);
-            inputs.temp = centigrade(Tm) + deltaT;
-            inputs.rate_model = ogRateModel;
-        }
-        std::cout << "New Temperature: " << inputs.temp << endl;
-
         make_weight_directory();
         ofstream infoFile;
         open_info_file(infoFile);

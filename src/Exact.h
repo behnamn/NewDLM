@@ -60,7 +60,7 @@ void exact(Simulation* sim){
     for (auto &pstate : all_states){
         if (i%10000==0) {
             std::cout << i << std::endl;
-            //outfile << std::flush;
+            outfile << std::flush;
         }
 
         int stIdx = 0;

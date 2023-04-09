@@ -18,11 +18,13 @@ OPManager::OPManager(StatManager* statManager_): statManager(statManager_){
 
     this->initialise();
     if (inputs->umbrella_sampling) this->read_weights();
+
     ofstream a;
     for (const auto& op : this->OPs_2D){
         files_2D.push_back(std::move(a));
         burn_2D.push_back(std::move(a));
     }
+
     set_values();
 }
 void OPManager::initialise(){
@@ -261,7 +263,7 @@ void OPManager::write_last(){
         }
         ofiles->hist_file << "\n";
     }
-    //ofiles->hist_file << std::flush;
+    ofiles->hist_file << std::flush;
     int i = 0;
     for (auto& op : this->OPs_2D){
         string str = "Output/"; str+="2D-"; str+= op.name;
@@ -312,7 +314,7 @@ void OPManager::write_burn(){
         }
         ofiles->burn_file << "\n";
     }
-    //ofiles->burn_file << std::flush;
+    ofiles->burn_file << std::flush;
     int i = 0;
     for (auto& op : this->OPs_2D){
         string str = "Output/"; str+="Burn2D-"; str+= op.name;
@@ -376,7 +378,7 @@ void OPManager::write(){
         }
         ofiles->traj_hist_file << "\n";
     }
-    //ofiles->traj_hist_file << std::flush;
+    ofiles->traj_hist_file << std::flush;
 }
 
 void OPManager::generate_config(){

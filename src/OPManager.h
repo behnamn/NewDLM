@@ -43,7 +43,7 @@ void write_obj_hist(ofstream& myfile,
         }
         myfile << "\n";
     }
-    //myfile << std::flush;
+    myfile << std::flush;
 }
 
 class OPManager{
