@@ -188,6 +188,8 @@ void Simulation::run(){
         statManager->write_in_times();
 	}
 	else if (inputs->isothermal) {
+        ofiles->info_file << "Temp = " << inputs->temp << std::endl;
+        ofiles->info_file << std::flush;
         cout << "------ Starting Iso Simulation ------\n";
         if (inputs->umbrella_sampling && inputs->initialise_as == "random") this->prepare_config();
         while (trManager->step < inputs->max_steps && ramp->current_t < ramp->t_max) {

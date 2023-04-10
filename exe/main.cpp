@@ -269,12 +269,15 @@ int main(int argc, char * argv[]) {
         std::cout << "Input Temperature: " << inputs.temp << endl;
         if (inputs.temp < 0) {
             string ogRateModel = inputs.rate_model;
+            string ogSimType = inputs.sim_type;
             if (ogRateModel == "local") inputs.rate_model = "global";
+            inputs.sim_type = "exact";
             double deltaT = -1. * (inputs.temp + 100.);
             Simulation sim = Simulation(&inputs, &constants);
             double Tm = calculate_Tm(&sim);
             inputs.temp = centigrade(Tm) + deltaT;
             inputs.rate_model = ogRateModel;
+            inputs.sim_type = ogSimType;
         }
         std::cout << "New Temperature: " << inputs.temp << endl;
     }
